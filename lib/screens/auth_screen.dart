@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'sign_up_screen.dart';
 
 class AuthAndRoleSelectionWidget extends StatefulWidget {
   const AuthAndRoleSelectionWidget({super.key});
@@ -15,7 +14,7 @@ class _AuthAndRoleSelectionWidgetState
   final passwordController = TextEditingController();
 
   bool passwordVisible = false;
-  String selectedRole = "job"; // job أو company
+  String selectedRole = "job";
 
   @override
   void dispose() {
@@ -32,56 +31,69 @@ class _AuthAndRoleSelectionWidgetState
   }) {
     final isSelected = selectedRole == value;
 
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedRole = value;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.blue.withOpacity(0.1) : Colors.grey[100],
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? Colors.blue : Colors.grey.shade300,
-            width: 2,
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            selectedRole = value;
+          });
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.blue : Colors.grey[200],
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              if (isSelected)
+                BoxShadow(
+                  color: Colors.blue.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                color: isSelected ? Colors.white : Colors.blue,
+                size: 28,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                title,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isSelected ? Colors.white70 : Colors.grey,
+                ),
+              ),
+            ],
           ),
         ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 26,
-              backgroundColor: isSelected ? Colors.blue : Colors.grey.shade300,
-              child: Icon(icon, color: Colors.white),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    description,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: isSelected ? Colors.blue : Colors.grey,
-            ),
-          ],
-        ),
+      ),
+    );
+  }
+
+  InputDecoration customInput(String hint, IconData icon) {
+    return InputDecoration(
+      hintText: hint,
+      prefixIcon: Icon(icon),
+      filled: true,
+      fillColor: Colors.grey[100],
+      contentPadding: const EdgeInsets.symmetric(vertical: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
       ),
     );
   }
@@ -92,19 +104,19 @@ class _AuthAndRoleSelectionWidgetState
       backgroundColor: Colors.grey[50],
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 10),
+              const SizedBox(height: 20),
 
               // Logo
               Container(
-                width: 70,
-                height: 70,
+                width: 75,
+                height: 75,
                 decoration: BoxDecoration(
                   color: Colors.blue,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(22),
                 ),
                 child: const Icon(
                   Icons.auto_awesome,
@@ -113,21 +125,20 @@ class _AuthAndRoleSelectionWidgetState
                 ),
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
               const Text(
                 "CareerAI",
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
               ),
 
               const Text(
-                "AI-powered career platform",
+                "Create your professional account",
                 style: TextStyle(color: Colors.grey),
               ),
 
               const SizedBox(height: 25),
 
-              // Role selection
               Align(
                 alignment: Alignment.centerLeft,
                 child: const Text(
@@ -135,48 +146,41 @@ class _AuthAndRoleSelectionWidgetState
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
+
               const SizedBox(height: 12),
 
-              buildRoleCard(
-                title: "Job Seeker",
-                description: "Find jobs, improve skills with AI",
-                icon: Icons.person,
-                value: "job",
-              ),
-              const SizedBox(height: 12),
-              buildRoleCard(
-                title: "Company",
-                description: "Post jobs and find candidates",
-                icon: Icons.business,
-                value: "company",
+              // 🔥 Row بدل Column
+              Row(
+                children: [
+                  buildRoleCard(
+                    title: "Job Seeker",
+                    description: "Find jobs & learn",
+                    icon: Icons.person,
+                    value: "job",
+                  ),
+                  const SizedBox(width: 12),
+                  buildRoleCard(
+                    title: "Company",
+                    description: "Hire talent",
+                    icon: Icons.business,
+                    value: "company",
+                  ),
+                ],
               ),
 
               const SizedBox(height: 25),
 
-              // Email
               TextField(
                 controller: emailController,
-                decoration: InputDecoration(
-                  hintText: "Email",
-                  prefixIcon: const Icon(Icons.email),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
+                decoration: customInput("Email", Icons.email),
               ),
 
               const SizedBox(height: 15),
 
-              // Password
               TextField(
                 controller: passwordController,
                 obscureText: !passwordVisible,
-                decoration: InputDecoration(
-                  hintText: "Password",
-                  prefixIcon: const Icon(Icons.lock),
+                decoration: customInput("Password", Icons.lock).copyWith(
                   suffixIcon: IconButton(
                     icon: Icon(
                       passwordVisible ? Icons.visibility : Icons.visibility_off,
@@ -186,12 +190,6 @@ class _AuthAndRoleSelectionWidgetState
                         passwordVisible = !passwordVisible;
                       });
                     },
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
                   ),
                 ),
               ),
@@ -208,55 +206,56 @@ class _AuthAndRoleSelectionWidgetState
 
               const SizedBox(height: 10),
 
-              // Login button
+              // 🔥 زر Login احترافي
               ElevatedButton(
                 onPressed: () {
                   print("Login pressed");
                 },
                 style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  elevation: 4,
+                  minimumSize: const Size(double.infinity, 55),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(18),
                   ),
                 ),
-                child: const Text("Login"),
+                child: const Text(
+                  "Login",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
-              // Sign up
               OutlinedButton(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SignUpScreen(),
-                    ),
-                  );
+                  Navigator.pushReplacementNamed(context, '/signup');
                 },
-                child: Text('Sign Up'),
                 style: OutlinedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 44),
-                  textStyle: TextStyle(fontSize: 14),
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
                 ),
+                child: const Text("Sign Up"),
               ),
 
               const SizedBox(height: 20),
 
               Row(
-                children: [
-                  const Expanded(child: Divider()),
+                children: const [
+                  Expanded(child: Divider()),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: EdgeInsets.symmetric(horizontal: 8),
                     child: Text("OR"),
                   ),
-                  const Expanded(child: Divider()),
+                  Expanded(child: Divider()),
                 ],
               ),
 
               const SizedBox(height: 20),
 
-              // Google Button
               ElevatedButton.icon(
                 onPressed: () {},
                 icon: const Icon(Icons.g_mobiledata, size: 28),
@@ -275,6 +274,8 @@ class _AuthAndRoleSelectionWidgetState
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
+
+              const SizedBox(height: 20),
             ],
           ),
         ),
