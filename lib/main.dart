@@ -13,12 +13,24 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+
+      // 🔥 اسم التطبيق
       title: 'CareerAI',
+
+      // 🔥 أول شاشة
+      initialRoute: '/login',
+
+      // 🔥 ربط الصفحات
+      routes: {
+        '/login': (context) => const AuthAndRoleSelectionWidget(),
+        '/signup': (context) => const SignUpScreen(),
+      },
+
+      // 🔥 شكل التطبيق
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true, // يعطي شكل حديث للـ Widgets
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
       ),
-      home: const AuthAndRoleSelectionWidget(),
     );
   }
 }

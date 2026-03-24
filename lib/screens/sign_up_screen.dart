@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'auth_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -14,9 +13,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final phoneController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
+
   bool passwordVisible = false;
   bool confirmPasswordVisible = false;
   bool termsAccepted = false;
+
+  String selectedRole = "job";
 
   @override
   void dispose() {
@@ -28,188 +30,212 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
+  // 🔥 نفس ستايل Login
+  Widget buildRoleCard({
+    required String title,
+    required String description,
+    required IconData icon,
+    required String value,
+  }) {
+    final isSelected = selectedRole == value;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            selectedRole = value;
+          });
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.blue : Colors.grey[200],
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              if (isSelected)
+                BoxShadow(
+                  color: Colors.blue.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                color: isSelected ? Colors.white : Colors.blue,
+                size: 28,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                title,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isSelected ? Colors.white70 : Colors.grey,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 🔥 Input احترافي
+  InputDecoration customInput(String hint, IconData icon) {
+    return InputDecoration(
+      hintText: hint,
+      prefixIcon: Icon(icon),
+      filled: true,
+      fillColor: Colors.grey[100],
+      contentPadding: const EdgeInsets.symmetric(vertical: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide.none,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey[50],
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              const SizedBox(height: 20),
+
               // Logo
-              SizedBox(height: 24),
               Container(
-                width: 80,
-                height: 80,
+                width: 75,
+                height: 75,
                 decoration: BoxDecoration(
                   color: Colors.blue,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(22),
                 ),
-                alignment: Alignment.center,
-                child: Icon(
-                  Icons.auto_awesome_rounded,
+                child: const Icon(
+                  Icons.auto_awesome,
                   color: Colors.white,
-                  size: 40,
+                  size: 35,
                 ),
               ),
-              SizedBox(height: 16),
-              Text(
-                'CareerAI',
+
+              const SizedBox(height: 12),
+
+              const Text(
+                "CareerAI",
                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 4),
-              Text(
-                'Create your professional account',
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              ),
-              SizedBox(height: 24),
 
-              // Role selection
+              const Text(
+                "Create your professional account",
+                style: TextStyle(color: Colors.grey),
+              ),
+
+              const SizedBox(height: 25),
+
+              Align(
+                alignment: Alignment.centerLeft,
+                child: const Text(
+                  "I am a...",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
               Row(
                 children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {}, // يمكن إضافة حالة اختيار لاحقاً
-                      child: Container(
-                        padding: EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.blue,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(Icons.person, color: Colors.white, size: 28),
-                            SizedBox(height: 8),
-                            Text(
-                              'Job Seeker',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              'Find jobs & learn skills',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  buildRoleCard(
+                    title: "Job Seeker",
+                    description: "Find jobs & learn",
+                    icon: Icons.person,
+                    value: "job",
                   ),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {},
-                      child: Container(
-                        padding: EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(Icons.business, color: Colors.blue, size: 28),
-                            SizedBox(height: 8),
-                            Text(
-                              'Company',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            Text(
-                              'Hire top AI talent',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  const SizedBox(width: 12),
+                  buildRoleCard(
+                    title: "Company",
+                    description: "Hire talent",
+                    icon: Icons.business,
+                    value: "company",
                   ),
                 ],
               ),
-              SizedBox(height: 24),
 
-              // Form fields
-              TextFormField(
+              const SizedBox(height: 25),
+
+              TextField(
                 controller: fullNameController,
-                decoration: InputDecoration(
-                  labelText: 'Full Name',
-                  prefixIcon: Icon(Icons.person),
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                ),
+                decoration: customInput("Full Name", Icons.person),
               ),
-              SizedBox(height: 16),
-              TextFormField(
+              const SizedBox(height: 15),
+
+              TextField(
                 controller: emailController,
-                decoration: InputDecoration(
-                  labelText: 'Email Address',
-                  prefixIcon: Icon(Icons.mail_outline),
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                ),
+                decoration: customInput("Email", Icons.email),
               ),
-              SizedBox(height: 16),
-              TextFormField(
+              const SizedBox(height: 15),
+
+              TextField(
                 controller: phoneController,
-                decoration: InputDecoration(
-                  labelText: 'Phone Number',
-                  prefixIcon: Icon(Icons.phone_android),
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                ),
+                decoration: customInput("Phone Number", Icons.phone),
               ),
-              SizedBox(height: 16),
-              TextFormField(
+              const SizedBox(height: 15),
+
+              TextField(
                 controller: passwordController,
                 obscureText: !passwordVisible,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: Icon(Icons.lock),
-                  suffixIcon: InkWell(
-                    onTap: () {
+                decoration: customInput("Password", Icons.lock).copyWith(
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      passwordVisible ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
                       setState(() {
                         passwordVisible = !passwordVisible;
                       });
                     },
-                    child: Icon(
-                      passwordVisible ? Icons.visibility : Icons.visibility_off,
-                    ),
                   ),
-                  filled: true,
-                  fillColor: Colors.grey[200],
                 ),
               ),
-              SizedBox(height: 16),
-              TextFormField(
+
+              const SizedBox(height: 15),
+
+              TextField(
                 controller: confirmPasswordController,
                 obscureText: !confirmPasswordVisible,
-                decoration: InputDecoration(
-                  labelText: 'Confirm Password',
-                  prefixIcon: Icon(Icons.shield),
-                  suffixIcon: InkWell(
-                    onTap: () {
-                      setState(() {
-                        confirmPasswordVisible = !confirmPasswordVisible;
-                      });
-                    },
-                    child: Icon(
-                      confirmPasswordVisible
-                          ? Icons.visibility
-                          : Icons.visibility_off,
+                decoration: customInput("Confirm Password", Icons.shield)
+                    .copyWith(
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          confirmPasswordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            confirmPasswordVisible = !confirmPasswordVisible;
+                          });
+                        },
+                      ),
                     ),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                ),
               ),
-              SizedBox(height: 8),
+
+              const SizedBox(height: 8),
+
               Row(
                 children: [
                   Checkbox(
@@ -220,49 +246,68 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       });
                     },
                   ),
-                  Expanded(
+                  const Expanded(
                     child: Text(
-                      'I agree to the Terms of Service and Privacy Policy',
+                      "I agree to Terms & Privacy Policy",
                       style: TextStyle(fontSize: 12),
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 16),
 
-              // Create Account button
+              const SizedBox(height: 10),
+
+              // 🔥 زر احترافي
               ElevatedButton(
                 onPressed: () {
-                  print('Create Account pressed');
+                  print("Create Account");
                 },
-                child: Text('Create Account'),
                 style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 50),
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  elevation: 4,
+                  minimumSize: const Size(double.infinity, 55),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+                child: const Text(
+                  "Create Account",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
-              SizedBox(height: 16),
 
-              // Sign in with options
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(onPressed: () {}, icon: Icon(Icons.g_mobiledata)),
-                  IconButton(onPressed: () {}, icon: Icon(Icons.apple)),
-                  IconButton(onPressed: () {}, icon: Icon(Icons.facebook)),
-                ],
-              ),
-              SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-              // Login link
-              GestureDetector(
-                onTap: () {
-                  Navigator.pop(context); // ترجع لواجهة Login
-                },
-                child: Text(
-                  'Already have an account? Login',
-                  style: TextStyle(color: Colors.blue),
+              // 🔥 Google فقط
+              ElevatedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.g_mobiledata, size: 28),
+                label: const Text("Continue with Google"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  minimumSize: const Size(double.infinity, 50),
                 ),
               ),
+
+              const SizedBox(height: 20),
+
+              // 🔥 تغيير شكل الكيرسر
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/login');
+                  },
+                  child: const Text(
+                    "Already have an account? Login",
+                    style: TextStyle(color: Colors.blue),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
             ],
           ),
         ),
