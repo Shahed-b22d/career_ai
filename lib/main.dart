@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'screens/auth_screen.dart';
+import 'screens/sign_up_screen.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -16,9 +19,7 @@ class MyApp extends StatelessWidget {
       title: 'CareerAI',
 
       // 🔥 أول شاشة
-      initialRoute: '/login',
-
-      // 🔥 ربط الصفحات
+      initialRoute: '/login', // 🔥 ربط الصفحات
       routes: {
         '/login': (context) => const AuthAndRoleSelectionWidget(),
         '/signup': (context) => const SignUpScreen(),
@@ -29,10 +30,6 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
       ),
-<<<<<<< HEAD
-      home: PersonProfile(),
-=======
->>>>>>> 20fa8fd52b05f3dcf47fdf3959b7e40e9a47323e
     );
   }
 }

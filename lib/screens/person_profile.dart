@@ -3,20 +3,19 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-class CompanyProfile extends StatefulWidget {
-  const CompanyProfile({super.key});
+class PersonProfile extends StatefulWidget {
+  const PersonProfile({super.key});
 
   @override
-  State<CompanyProfile> createState() => _CompanyProfileState();
+  State<PersonProfile> createState() => _PersonProfileState();
 }
 
-class _CompanyProfileState extends State<CompanyProfile> {
+class _PersonProfileState extends State<PersonProfile> {
   bool isEditing = false;
 
-  final nameController = TextEditingController(text: "Company Name");
-  final emailController = TextEditingController(text: "company@email.com");
+  final nameController = TextEditingController(text: "User Name");
+  final emailController = TextEditingController(text: "user@email.com");
   final phoneController = TextEditingController(text: "0999999999");
-  final jobController = TextEditingController(text: "IT / Design");
 
   File? image;
   final picker = ImagePicker();
@@ -78,7 +77,7 @@ class _CompanyProfileState extends State<CompanyProfile> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // 🔥 صورة الشركة
+            // 🔥 صورة
             GestureDetector(
               onTap: isEditing ? pickImage : null,
               child: CircleAvatar(
@@ -86,7 +85,7 @@ class _CompanyProfileState extends State<CompanyProfile> {
                 backgroundColor: Colors.blue.shade100,
                 backgroundImage: image != null ? FileImage(image!) : null,
                 child: image == null
-                    ? const Icon(Icons.business, size: 30)
+                    ? const Icon(Icons.camera_alt, size: 30)
                     : null,
               ),
             ),
@@ -108,10 +107,9 @@ class _CompanyProfileState extends State<CompanyProfile> {
               ),
               child: Column(
                 children: [
-                  buildField("Company Name", nameController),
+                  buildField("Name", nameController),
                   buildField("Email", emailController),
                   buildField("Phone", phoneController),
-                  buildField("Job Type", jobController),
                 ],
               ),
             ),
