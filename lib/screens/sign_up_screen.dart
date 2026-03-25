@@ -30,10 +30,48 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  // 🔥 نفس ستايل Login
+  // 🔥 اللوجو (نفس السبلاش بدون صورة)
+  Widget appLogo() {
+    return Container(
+      width: 85,
+      height: 85,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1E66F5), Color(0xFFFFD600)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: const Icon(Icons.auto_awesome, color: Colors.black, size: 35),
+    );
+  }
+
+  // 🔥 input احترافي
+  InputDecoration customInput(String hint, IconData icon) {
+    return InputDecoration(
+      hintText: hint,
+      prefixIcon: Icon(icon, color: Colors.blue),
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(vertical: 18),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20),
+        borderSide: BorderSide.none,
+      ),
+    );
+  }
+
+  // 🔥 role card احترافي
   Widget buildRoleCard({
     required String title,
-    required String description,
     required IconData icon,
     required String value,
   }) {
@@ -47,42 +85,33 @@ class _SignUpScreenState extends State<SignUpScreen> {
           });
         },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          padding: const EdgeInsets.symmetric(vertical: 18),
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.symmetric(vertical: 20),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.blue : Colors.grey[200],
-            borderRadius: BorderRadius.circular(20),
+            gradient: isSelected
+                ? const LinearGradient(
+                    colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
+                  )
+                : null,
+            color: isSelected ? null : Colors.white,
+            borderRadius: BorderRadius.circular(22),
             boxShadow: [
-              if (isSelected)
-                BoxShadow(
-                  color: Colors.blue.withOpacity(0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
+              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
             ],
           ),
           child: Column(
             children: [
               Icon(
                 icon,
+                size: 30,
                 color: isSelected ? Colors.white : Colors.blue,
-                size: 28,
               ),
               const SizedBox(height: 10),
               Text(
                 title,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.black,
                   fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isSelected ? Colors.white70 : Colors.grey,
+                  color: isSelected ? Colors.white : Colors.black,
                 ),
               ),
             ],
@@ -92,25 +121,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // 🔥 Input احترافي
-  InputDecoration customInput(String hint, IconData icon) {
-    return InputDecoration(
-      hintText: hint,
-      prefixIcon: Icon(icon),
-      filled: true,
-      fillColor: Colors.grey[100],
-      contentPadding: const EdgeInsets.symmetric(vertical: 16),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide.none,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF5F7FB),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -118,38 +132,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
             children: [
               const SizedBox(height: 20),
 
-              // Logo
-              Container(
-                width: 75,
-                height: 75,
-                decoration: BoxDecoration(
-                  color: Colors.blue,
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: const Icon(
-                  Icons.auto_awesome,
-                  color: Colors.white,
-                  size: 35,
-                ),
-              ),
+              // 🔥 لوجو
+              appLogo(),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 15),
 
               const Text(
                 "CareerAI",
                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
               ),
 
+              const SizedBox(height: 5),
+
               const Text(
                 "Create your professional account",
                 style: TextStyle(color: Colors.grey),
               ),
 
-              const SizedBox(height: 25),
+              const SizedBox(height: 30),
 
-              Align(
+              const Align(
                 alignment: Alignment.centerLeft,
-                child: const Text(
+                child: Text(
                   "I am a...",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
@@ -161,14 +165,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 children: [
                   buildRoleCard(
                     title: "Job Seeker",
-                    description: "Find jobs & learn",
                     icon: Icons.person,
                     value: "job",
                   ),
                   const SizedBox(width: 12),
                   buildRoleCard(
                     title: "Company",
-                    description: "Hire talent",
                     icon: Icons.business,
                     value: "company",
                   ),
@@ -234,7 +236,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
               ),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
 
               Row(
                 children: [
@@ -255,55 +257,56 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ],
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 15),
 
               // 🔥 زر احترافي
-              ElevatedButton(
-                onPressed: () {
-                  print("Create Account");
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  elevation: 4,
-                  minimumSize: const Size(double.infinity, 55),
+              Container(
+                width: double.infinity,
+                height: 55,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: ElevatedButton(
+                  onPressed: () {
+                    print("Create Account");
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                  ),
+                  child: const Text(
+                    "Create Account",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.g_mobiledata, size: 28),
+                label: const Text("Continue with Google"),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
                   ),
                 ),
+              ),
+
+              const SizedBox(height: 20),
+
+              GestureDetector(
+                onTap: () {
+                  Navigator.pushReplacementNamed(context, '/login');
+                },
                 child: const Text(
-                  "Create Account",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // 🔥 Google فقط
-              ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.g_mobiledata, size: 28),
-                label: const Text("Continue with Google"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // 🔥 تغيير شكل الكيرسر
-              MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.pushReplacementNamed(context, '/login');
-                  },
-                  child: const Text(
-                    "Already have an account? Login",
-                    style: TextStyle(color: Colors.blue),
-                  ),
+                  "Already have an account? Login",
+                  style: TextStyle(color: Colors.blue),
                 ),
               ),
 
