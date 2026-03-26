@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 import 'screens/auth_screen.dart';
 import 'screens/company_profile.dart';
+import 'screens/main_screen.dart';
 import 'screens/person_profile.dart';
 import 'screens/sign_up_screen.dart';
 import 'screens/splash_screen.dart';
+import 'screens/upload_cv_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -30,8 +32,9 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const AuthAndRoleSelectionWidget(),
         '/signup': (context) => const SignUpScreen(),
         '/personProfile': (context) => const PersonProfile(),
-
         '/companyProfile': (context) => const CompanyProfileScreen(),
+        '/home': (context) => const MainScreen(),
+        '/uploadCV': (context) => const UploadCVScreen(),
       },
 
       // 🔥 شكل التطبيق

@@ -235,6 +235,7 @@ class _AuthAndRoleSelectionWidgetState
                 child: ElevatedButton(
                   onPressed: () {
                     print("Login pressed");
+                    Navigator.pushReplacementNamed(context, '/home');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
