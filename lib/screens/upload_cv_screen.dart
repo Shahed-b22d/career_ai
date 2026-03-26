@@ -1,42 +1,116 @@
-import 'package:flutter/material.dart';
+import 'dart:io';
 
-class UploadCVScreen extends StatefulWidget {
-  const UploadCVScreen({super.key});
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+
+class UploadScreen extends StatefulWidget {
+  const UploadScreen({super.key});
 
   @override
-  State<UploadCVScreen> createState() => _UploadCVScreenState();
+  State<UploadScreen> createState() => _UploadScreenState();
 }
 
-class _UploadCVScreenState extends State<UploadCVScreen>
-    with SingleTickerProviderStateMixin {
-  bool showForm = false;
+class _UploadScreenState extends State<UploadScreen> {
+  File? pickedFile;
 
-  final nameController = TextEditingController();
-  final jobController = TextEditingController();
-  final skillsController = TextEditingController();
+  final name = TextEditingController();
+  final email = TextEditingController();
+  final phone = TextEditingController();
+  final summary = TextEditingController();
+  final skills = TextEditingController();
+  final experience = TextEditingController();
+  final education = TextEditingController();
 
-  late AnimationController _controller;
-  late Animation<double> fade;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
+  // 🔥 رفع PDF
+  Future pickPDF() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
     );
 
-    fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    if (result != null) {
+      setState(() {
+        pickedFile = File(result.files.single.path!);
+      });
+    }
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    nameController.dispose();
-    jobController.dispose();
-    skillsController.dispose();
-    super.dispose();
+  // 🔥 إنشاء PDF
+  Future generatePDF() async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.Page(
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                name.text,
+                style: pw.TextStyle(
+                  fontSize: 22,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 10),
+              pw.Text(email.text),
+              pw.Text(phone.text),
+
+              pw.SizedBox(height: 20),
+              pw.Text(
+                "Summary",
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Text(summary.text),
+
+              pw.SizedBox(height: 15),
+              pw.Text(
+                "Skills",
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Text(skills.text),
+
+              pw.SizedBox(height: 15),
+              pw.Text(
+                "Experience",
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Text(experience.text),
+
+              pw.SizedBox(height: 15),
+              pw.Text(
+                "Education",
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Text(education.text),
+            ],
+          );
+        },
+      ),
+    );
+
+    final dir = await getApplicationDocumentsDirectory();
+    final file = File("${dir.path}/cv.pdf");
+
+    await file.writeAsBytes(await pdf.save());
+
+    // 🔥 عرض / تحميل
+    await Printing.layoutPdf(onLayout: (format) async => pdf.save());
+  }
+
+  InputDecoration input(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide.none,
+      ),
+    );
   }
 
   @override
@@ -51,164 +125,105 @@ class _UploadCVScreenState extends State<UploadCVScreen>
         elevation: 0,
       ),
 
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 400),
-          child: showForm ? buildForm() : buildOptions(),
-        ),
-      ),
-    );
-  }
-
-  // 🔥 الخيارات
-  Widget buildOptions() {
-    return Column(
-      key: const ValueKey("options"),
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        optionButton(
-          icon: Icons.upload_file,
-          text: "Upload CV",
-          onTap: () {
-            // 🔥 لاحقاً file picker
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text("CV Uploaded ✅")));
-
-            Navigator.pop(context, true);
-          },
-        ),
-
-        const SizedBox(height: 20),
-
-        optionButton(
-          icon: Icons.edit_document,
-          text: "Create CV",
-          onTap: () {
-            setState(() {
-              showForm = true;
-            });
-            _controller.forward();
-          },
-        ),
-      ],
-    );
-  }
-
-  // 🔥 زر ستايل المشروع
-  Widget optionButton({
-    required IconData icon,
-    required String text,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
-          ),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Column(
           children: [
-            Icon(icon, color: Colors.white),
-            const SizedBox(width: 10),
-            Text(
-              text,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+            // 🔵 رفع PDF
+            GestureDetector(
+              onTap: pickPDF,
+              child: Container(
+                padding: const EdgeInsets.all(25),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  children: const [
+                    Icon(Icons.upload_file, color: Colors.white, size: 40),
+                    SizedBox(height: 10),
+                    Text(
+                      "Upload your CV (PDF)",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ],
+                ),
               ),
+            ),
+
+            const SizedBox(height: 20),
+
+            if (pickedFile != null)
+              Text("File selected ✅", style: TextStyle(color: Colors.green)),
+
+            const SizedBox(height: 30),
+
+            const Text(
+              "Or Create Your CV ✨",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 15),
+
+            TextField(controller: name, decoration: input("Full Name")),
+            const SizedBox(height: 10),
+
+            TextField(controller: email, decoration: input("Email")),
+            const SizedBox(height: 10),
+
+            TextField(controller: phone, decoration: input("Phone")),
+            const SizedBox(height: 10),
+
+            TextField(
+              controller: summary,
+              maxLines: 2,
+              decoration: input("Professional Summary"),
+            ),
+
+            const SizedBox(height: 10),
+
+            TextField(
+              controller: skills,
+              maxLines: 2,
+              decoration: input("Skills (مثال: إدارة، تصميم...)"),
+            ),
+
+            const SizedBox(height: 10),
+
+            TextField(
+              controller: experience,
+              maxLines: 2,
+              decoration: input("Experience"),
+            ),
+
+            const SizedBox(height: 10),
+
+            TextField(
+              controller: education,
+              maxLines: 2,
+              decoration: input("Education"),
+            ),
+
+            const SizedBox(height: 25),
+
+            ElevatedButton(
+              onPressed: generatePDF,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 30,
+                  vertical: 15,
+                ),
+                backgroundColor: Colors.blue,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
+              child: const Text("Generate CV PDF"),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  // 🔥 الفورم
-  Widget buildForm() {
-    return FadeTransition(
-      opacity: fade,
-      child: Column(
-        key: const ValueKey("form"),
-        children: [
-          TextField(
-            controller: nameController,
-            decoration: input("Full Name", Icons.person),
-          ),
-
-          const SizedBox(height: 15),
-
-          TextField(
-            controller: jobController,
-            decoration: input("Job Title", Icons.work),
-          ),
-
-          const SizedBox(height: 15),
-
-          TextField(
-            controller: skillsController,
-            decoration: input("Skills", Icons.star),
-          ),
-
-          const SizedBox(height: 25),
-
-          Container(
-            width: double.infinity,
-            height: 55,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
-              ),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: ElevatedButton(
-              onPressed: () {
-                // 🔥 لاحقاً نولد CV
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text("CV Created ✅")));
-
-                Navigator.pop(context, true);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-              ),
-              child: const Text("Generate CV"),
-            ),
-          ),
-
-          const SizedBox(height: 15),
-
-          TextButton(
-            onPressed: () {
-              setState(() {
-                showForm = false;
-              });
-            },
-            child: const Text("Back"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  InputDecoration input(String hint, IconData icon) {
-    return InputDecoration(
-      hintText: hint,
-      prefixIcon: Icon(icon, color: Colors.blue),
-      filled: true,
-      fillColor: Colors.white,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide.none,
       ),
     );
   }
