@@ -10,135 +10,237 @@ class PersonProfile extends StatefulWidget {
   State<PersonProfile> createState() => _PersonProfileState();
 }
 
-class _PersonProfileState extends State<PersonProfile> {
-  bool isEditing = false;
+class _PersonProfileState extends State<PersonProfile>
+    with SingleTickerProviderStateMixin {
+  final _formKey = GlobalKey<FormState>();
 
-  final nameController = TextEditingController(text: "User Name");
-  final emailController = TextEditingController(text: "user@email.com");
-  final phoneController = TextEditingController(text: "0999999999");
+  final nameController = TextEditingController();
+  final emailController = TextEditingController();
+  final phoneController = TextEditingController();
 
-  File? image;
-  final picker = ImagePicker();
+  File? _image;
+
+  late AnimationController _controller;
+  late Animation<double> fade;
+  late Animation<Offset> slide;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+
+    fade = Tween(begin: 0.0, end: 1.0).animate(_controller);
+    slide = Tween(
+      begin: const Offset(0, 0.2),
+      end: Offset.zero,
+    ).animate(_controller);
+
+    _controller.forward();
+
+    // 🔥 الربط مع SignUp (الإضافة الوحيدة)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final data = ModalRoute.of(context)!.settings.arguments as Map?;
+
+      if (data != null) {
+        nameController.text = data["name"] ?? "";
+        emailController.text = data["email"] ?? "";
+        phoneController.text = data["phone"] ?? "";
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    nameController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    super.dispose();
+  }
 
   Future pickImage() async {
-    final picked = await picker.pickImage(source: ImageSource.gallery);
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+
     if (picked != null) {
       setState(() {
-        image = File(picked.path);
+        _image = File(picked.path);
       });
     }
   }
 
-  Widget buildField(String label, TextEditingController controller) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: isEditing
-          ? TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                labelText: label,
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
-                  ),
-                ),
-                Text(controller.text),
-              ],
-            ),
+  bool isValidEmail(String email) {
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w]{2,4}$').hasMatch(email);
+  }
+
+  bool isValidPhone(String phone) {
+    return RegExp(r'^[0-9]{10}$').hasMatch(phone);
+  }
+
+  InputDecoration input(String hint, IconData icon) {
+    return InputDecoration(
+      hintText: hint,
+      prefixIcon: Icon(icon, color: Colors.blue),
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide.none,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF5F7FB),
+      backgroundColor: const Color(0xFFF5F7FB),
 
-      appBar: AppBar(
-        title: const Text("Profile"),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: Colors.black,
-      ),
-
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // 🔥 صورة
-            GestureDetector(
-              onTap: isEditing ? pickImage : null,
-              child: CircleAvatar(
-                radius: 55,
-                backgroundColor: Colors.blue.shade100,
-                backgroundImage: image != null ? FileImage(image!) : null,
-                child: image == null
-                    ? const Icon(Icons.camera_alt, size: 30)
-                    : null,
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // 🔥 الكارد
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    blurRadius: 10,
+      body: FadeTransition(
+        opacity: fade,
+        child: SlideTransition(
+          position: slide,
+          child: Column(
+            children: [
+              // 🔥 HEADER
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.only(top: 60, bottom: 30),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
                   ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  buildField("Name", nameController),
-                  buildField("Email", emailController),
-                  buildField("Phone", phoneController),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            // 🔥 زر
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade700,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(35),
+                    bottomRight: Radius.circular(35),
                   ),
                 ),
-                onPressed: () {
-                  setState(() {
-                    isEditing = !isEditing;
-                  });
-                },
-                child: Text(
-                  isEditing ? "Save" : "Edit",
-                  style: const TextStyle(fontSize: 16),
+                child: Column(
+                  children: [
+                    Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 45,
+                          backgroundColor: Colors.white,
+                          backgroundImage: _image != null
+                              ? FileImage(_image!)
+                              : null,
+                          child: _image == null
+                              ? const Icon(Icons.person, size: 40)
+                              : null,
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: pickImage,
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.blue,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(6),
+                              child: const Icon(
+                                Icons.edit,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      "Edit Profile",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
+
+              const SizedBox(height: 20),
+
+              // 🔥 FORM
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          controller: nameController,
+                          decoration: input("Full Name", Icons.person),
+                          validator: (v) {
+                            if (v == null || v.isEmpty) {
+                              return "Name required";
+                            }
+                            if (v.length < 3) {
+                              return "Name too short";
+                            }
+                            return null;
+                          },
+                        ),
+
+                        const SizedBox(height: 15),
+
+                        TextFormField(
+                          controller: emailController,
+                          decoration: input("Email", Icons.email),
+                          validator: (v) =>
+                              !isValidEmail(v!) ? "Invalid email" : null,
+                        ),
+
+                        const SizedBox(height: 15),
+
+                        TextFormField(
+                          controller: phoneController,
+                          keyboardType: TextInputType.number,
+                          decoration: input("Phone", Icons.phone),
+                          validator: (v) =>
+                              !isValidPhone(v!) ? "10 digits required" : null,
+                        ),
+
+                        const Spacer(),
+
+                        Container(
+                          width: double.infinity,
+                          height: 55,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
+                            ),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: ElevatedButton(
+                            onPressed: () {
+                              if (!_formKey.currentState!.validate()) return;
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Saved ✅")),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                            ),
+                            child: const Text("Save Changes"),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
