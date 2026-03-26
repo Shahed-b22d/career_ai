@@ -3,26 +3,61 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-class CompanyProfile extends StatefulWidget {
-  const CompanyProfile({super.key});
+class CompanyProfileScreen extends StatefulWidget {
+  const CompanyProfileScreen({super.key});
 
   @override
-  State<CompanyProfile> createState() => _CompanyProfileState();
+  State<CompanyProfileScreen> createState() => _CompanyProfileScreenState();
 }
 
-class _CompanyProfileState extends State<CompanyProfile> {
-  bool isEditing = false;
+class _CompanyProfileScreenState extends State<CompanyProfileScreen>
+    with SingleTickerProviderStateMixin {
+  final companyNameController = TextEditingController();
+  final emailController = TextEditingController();
+  final phoneController = TextEditingController();
+  final descriptionController = TextEditingController();
 
-  final nameController = TextEditingController(text: "Company Name");
-  final emailController = TextEditingController(text: "company@email.com");
-  final phoneController = TextEditingController(text: "0999999999");
-  final jobController = TextEditingController(text: "IT / Design");
+  String workType = "IT"; // ✅ نوع العمل
+
+  final _formKey = GlobalKey<FormState>();
 
   File? image;
-  final picker = ImagePicker();
+
+  late AnimationController _controller;
+  late Animation<double> fade;
+  late Animation<Offset> slide;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+
+    fade = Tween(begin: 0.0, end: 1.0).animate(_controller);
+    slide = Tween(
+      begin: const Offset(0, 0.2),
+      end: Offset.zero,
+    ).animate(_controller);
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    companyNameController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    descriptionController.dispose();
+    super.dispose();
+  }
 
   Future pickImage() async {
-    final picked = await picker.pickImage(source: ImageSource.gallery);
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+
     if (picked != null) {
       setState(() {
         image = File(picked.path);
@@ -30,117 +65,215 @@ class _CompanyProfileState extends State<CompanyProfile> {
     }
   }
 
-  Widget buildField(String label, TextEditingController controller) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: isEditing
-          ? TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                labelText: label,
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
-                  ),
-                ),
-                Text(controller.text),
-              ],
-            ),
+  InputDecoration input(String hint, IconData icon) {
+    return InputDecoration(
+      hintText: hint,
+      prefixIcon: Icon(icon, color: Colors.blue),
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide.none,
+      ),
     );
+  }
+
+  String? validateEmail(String? v) {
+    if (v == null || v.isEmpty) return "Required";
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w]{2,4}$').hasMatch(v)) {
+      return "Invalid email";
+    }
+    return null;
+  }
+
+  String? validatePhone(String? v) {
+    if (v == null || v.isEmpty) return "Required";
+    if (!RegExp(r'^[0-9]{10}$').hasMatch(v)) {
+      return "10 digits required";
+    }
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
+    // ✅ استقبال الداتا من signup
+    final data = ModalRoute.of(context)!.settings.arguments as Map?;
+
+    if (data != null) {
+      companyNameController.text = data["name"] ?? "";
+      emailController.text = data["email"] ?? "";
+      phoneController.text = data["phone"] ?? "";
+    }
+
     return Scaffold(
-      backgroundColor: const Color(0xffF5F7FB),
+      backgroundColor: const Color(0xFFF5F7FB),
 
-      appBar: AppBar(
-        title: const Text("Profile"),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: Colors.black,
-      ),
-
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // 🔥 صورة الشركة
-            GestureDetector(
-              onTap: isEditing ? pickImage : null,
-              child: CircleAvatar(
-                radius: 55,
-                backgroundColor: Colors.blue.shade100,
-                backgroundImage: image != null ? FileImage(image!) : null,
-                child: image == null
-                    ? const Icon(Icons.business, size: 30)
-                    : null,
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // 🔥 الكارد
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    blurRadius: 10,
+      body: FadeTransition(
+        opacity: fade,
+        child: SlideTransition(
+          position: slide,
+          child: Column(
+            children: [
+              // 🔥 HEADER نفس البيرسون
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.only(top: 60, bottom: 30),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
                   ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  buildField("Company Name", nameController),
-                  buildField("Email", emailController),
-                  buildField("Phone", phoneController),
-                  buildField("Job Type", jobController),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            // 🔥 زر
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade700,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(35),
+                    bottomRight: Radius.circular(35),
                   ),
                 ),
-                onPressed: () {
-                  setState(() {
-                    isEditing = !isEditing;
-                  });
-                },
-                child: Text(
-                  isEditing ? "Save" : "Edit",
-                  style: const TextStyle(fontSize: 16),
+                child: Column(
+                  children: [
+                    Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 45,
+                          backgroundColor: Colors.white,
+                          backgroundImage: image != null
+                              ? FileImage(image!)
+                              : null,
+                          child: image == null
+                              ? const Icon(Icons.business, size: 40)
+                              : null,
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: pickImage,
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.blue,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(6),
+                              child: const Icon(
+                                Icons.edit,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      "Company Profile",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
+
+              const SizedBox(height: 20),
+
+              // 🔥 FORM
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          controller: companyNameController,
+                          decoration: input("Company Name", Icons.business),
+                          validator: (v) =>
+                              v == null || v.isEmpty ? "Required" : null,
+                        ),
+
+                        const SizedBox(height: 15),
+
+                        TextFormField(
+                          controller: emailController,
+                          decoration: input("Email", Icons.email),
+                          validator: validateEmail,
+                        ),
+
+                        const SizedBox(height: 15),
+
+                        TextFormField(
+                          controller: phoneController,
+                          decoration: input("Phone", Icons.phone),
+                          keyboardType: TextInputType.number,
+                          validator: validatePhone,
+                        ),
+
+                        const SizedBox(height: 15),
+
+                        // ✅ نوع العمل
+                        DropdownButtonFormField(
+                          value: workType,
+                          decoration: input("Work Type", Icons.work),
+                          items: ["IT", "Medical", "Engineering", "Other"]
+                              .map(
+                                (e) =>
+                                    DropdownMenuItem(value: e, child: Text(e)),
+                              )
+                              .toList(),
+                          onChanged: (v) {
+                            setState(() {
+                              workType = v.toString();
+                            });
+                          },
+                        ),
+
+                        const SizedBox(height: 15),
+
+                        TextFormField(
+                          controller: descriptionController,
+                          maxLines: 3,
+                          decoration: input(
+                            "Company Description",
+                            Icons.description,
+                          ),
+                          validator: (v) =>
+                              v == null || v.isEmpty ? "Required" : null,
+                        ),
+
+                        const Spacer(),
+
+                        Container(
+                          width: double.infinity,
+                          height: 55,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
+                            ),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: ElevatedButton(
+                            onPressed: () {
+                              if (!_formKey.currentState!.validate()) return;
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Saved ✅")),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                            ),
+                            child: const Text("Save"),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
