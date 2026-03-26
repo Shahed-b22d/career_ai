@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'screens/auth_screen.dart';
+import 'screens/company_profile.dart';
+import 'screens/person_profile.dart';
 import 'screens/sign_up_screen.dart';
 import 'screens/splash_screen.dart';
 
@@ -27,6 +29,9 @@ class MyApp extends StatelessWidget {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const AuthAndRoleSelectionWidget(),
         '/signup': (context) => const SignUpScreen(),
+        '/personProfile': (context) => const PersonProfile(),
+
+        '/companyProfile': (context) => const CompanyProfileScreen(),
       },
 
       // 🔥 شكل التطبيق
