@@ -34,7 +34,7 @@ class MyApp extends StatelessWidget {
         '/personProfile': (context) => const PersonProfile(),
         '/companyProfile': (context) => const CompanyProfileScreen(),
         '/home': (context) => const MainScreen(),
-        '/uploadCV': (context) => const UploadCVScreen(),
+        '/uploadCV': (context) => const UploadScreen(),
       },
 
       // 🔥 شكل التطبيق
