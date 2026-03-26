@@ -1,8 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
@@ -24,7 +25,10 @@ class _UploadScreenState extends State<UploadScreen> {
   final experience = TextEditingController();
   final education = TextEditingController();
 
-  // 🔥 رفع PDF
+  // 🔐 API KEY من run
+  final String apiKey = const String.fromEnvironment('OPENAI_API_KEY');
+
+  // 📥 رفع PDF
   Future pickPDF() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -38,67 +42,156 @@ class _UploadScreenState extends State<UploadScreen> {
     }
   }
 
-  // 🔥 إنشاء PDF
+  // 🤖 تحسين AI
+  Future improveWithAI() async {
+    final url = Uri.parse("https://api.openai.com/v1/chat/completions");
+
+    final response = await http.post(
+      url,
+      headers: {
+        "Authorization": "Bearer $apiKey",
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a professional ATS CV writer.",
+          },
+          {
+            "role": "user",
+            "content":
+                """
+Improve this CV and return JSON only:
+
+{
+"summary": "...",
+"skills": "...",
+"experience": "...",
+"education": "..."
+}
+
+Summary: ${summary.text}
+Skills: ${skills.text}
+Experience: ${experience.text}
+Education: ${education.text}
+""",
+          },
+        ],
+      }),
+    );
+
+    print(response.body);
+
+    if (response.statusCode != 200) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("API Error ❌")));
+      return;
+    }
+
+    final data = jsonDecode(response.body);
+    final aiText = data["choices"][0]["message"]["content"];
+
+    final jsonData = jsonDecode(aiText);
+
+    setState(() {
+      summary.text = jsonData["summary"];
+      skills.text = jsonData["skills"];
+      experience.text = jsonData["experience"];
+      education.text = jsonData["education"];
+    });
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text("Improved Successfully ✅")));
+  }
+
+  // 📄 PDF
   Future generatePDF() async {
     final pdf = pw.Document();
 
     pdf.addPage(
       pw.Page(
-        build: (pw.Context context) {
-          return pw.Column(
+        build: (context) => pw.Padding(
+          padding: const pw.EdgeInsets.all(20),
+          child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Text(
                 name.text,
                 style: pw.TextStyle(
-                  fontSize: 22,
+                  fontSize: 24,
                   fontWeight: pw.FontWeight.bold,
                 ),
               ),
-              pw.SizedBox(height: 10),
-              pw.Text(email.text),
-              pw.Text(phone.text),
+              pw.Text("${email.text} | ${phone.text}"),
+              pw.Divider(),
 
-              pw.SizedBox(height: 20),
               pw.Text(
-                "Summary",
+                "SUMMARY",
                 style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
               ),
               pw.Text(summary.text),
 
-              pw.SizedBox(height: 15),
+              pw.SizedBox(height: 10),
               pw.Text(
-                "Skills",
+                "SKILLS",
                 style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
               ),
               pw.Text(skills.text),
 
-              pw.SizedBox(height: 15),
+              pw.SizedBox(height: 10),
               pw.Text(
-                "Experience",
+                "EXPERIENCE",
                 style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
               ),
               pw.Text(experience.text),
 
-              pw.SizedBox(height: 15),
+              pw.SizedBox(height: 10),
               pw.Text(
-                "Education",
+                "EDUCATION",
                 style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
               ),
               pw.Text(education.text),
             ],
-          );
-        },
+          ),
+        ),
       ),
     );
 
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File("${dir.path}/cv.pdf");
+    showModalBottomSheet(
+      context: context,
+      builder: (_) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("Your CV is ready 🎉"),
 
-    await file.writeAsBytes(await pdf.save());
+              ElevatedButton(
+                onPressed: () async {
+                  await Printing.layoutPdf(
+                    onLayout: (format) async => pdf.save(),
+                  );
+                },
+                child: const Text("Download CV"),
+              ),
 
-    // 🔥 عرض / تحميل
-    await Printing.layoutPdf(onLayout: (format) async => pdf.save());
+              OutlinedButton(
+                onPressed: () async {
+                  await improveWithAI();
+                  Navigator.pop(context);
+                },
+                child: const Text("✨ Improve with AI"),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   InputDecoration input(String hint) {
@@ -119,7 +212,7 @@ class _UploadScreenState extends State<UploadScreen> {
       backgroundColor: const Color(0xFFF5F7FB),
 
       appBar: AppBar(
-        title: const Text("Upload CV"),
+        title: const Text("Create CV"),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -129,7 +222,6 @@ class _UploadScreenState extends State<UploadScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // 🔵 رفع PDF
             GestureDetector(
               onTap: pickPDF,
               child: Container(
@@ -140,12 +232,12 @@ class _UploadScreenState extends State<UploadScreen> {
                   ),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Column(
-                  children: const [
+                child: const Column(
+                  children: [
                     Icon(Icons.upload_file, color: Colors.white, size: 40),
                     SizedBox(height: 10),
                     Text(
-                      "Upload your CV (PDF)",
+                      "Upload CV (PDF)",
                       style: TextStyle(color: Colors.white),
                     ),
                   ],
@@ -154,18 +246,6 @@ class _UploadScreenState extends State<UploadScreen> {
             ),
 
             const SizedBox(height: 20),
-
-            if (pickedFile != null)
-              Text("File selected ✅", style: TextStyle(color: Colors.green)),
-
-            const SizedBox(height: 30),
-
-            const Text(
-              "Or Create Your CV ✨",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 15),
 
             TextField(controller: name, decoration: input("Full Name")),
             const SizedBox(height: 10),
@@ -178,8 +258,8 @@ class _UploadScreenState extends State<UploadScreen> {
 
             TextField(
               controller: summary,
-              maxLines: 2,
-              decoration: input("Professional Summary"),
+              maxLines: 3,
+              decoration: input("Write short intro about you"),
             ),
 
             const SizedBox(height: 10),
@@ -187,15 +267,15 @@ class _UploadScreenState extends State<UploadScreen> {
             TextField(
               controller: skills,
               maxLines: 2,
-              decoration: input("Skills (مثال: إدارة، تصميم...)"),
+              decoration: input("Write your skills (e.g. teamwork, coding)"),
             ),
 
             const SizedBox(height: 10),
 
             TextField(
               controller: experience,
-              maxLines: 2,
-              decoration: input("Experience"),
+              maxLines: 3,
+              decoration: input("Write your experience or projects"),
             ),
 
             const SizedBox(height: 10),
@@ -203,24 +283,14 @@ class _UploadScreenState extends State<UploadScreen> {
             TextField(
               controller: education,
               maxLines: 2,
-              decoration: input("Education"),
+              decoration: input("Your education"),
             ),
 
-            const SizedBox(height: 25),
+            const SizedBox(height: 20),
 
             ElevatedButton(
               onPressed: generatePDF,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 30,
-                  vertical: 15,
-                ),
-                backgroundColor: Colors.blue,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
-              child: const Text("Generate CV PDF"),
+              child: const Text("Generate CV"),
             ),
           ],
         ),
