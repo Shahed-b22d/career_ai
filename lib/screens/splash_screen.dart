@@ -13,7 +13,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
 
-    // ⏱ الانتقال بعد 3 ثواني
+    // ⏱ الانتقال بعد 3 ثواني للـ Login
     Timer(const Duration(seconds: 3), () {
       Navigator.pushReplacementNamed(context, '/login');
     });
@@ -25,7 +25,6 @@ class _SplashScreenState extends State<SplashScreen> {
       backgroundColor: const Color(0xFFF5F6FA),
       body: Stack(
         children: [
-          // 🔵 الدائرة العلوية
           Positioned(
             top: -100,
             right: -80,
@@ -38,8 +37,6 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ),
           ),
-
-          // 🟣 الدائرة السفلية
           Positioned(
             bottom: -120,
             left: -80,
@@ -52,13 +49,10 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ),
           ),
-
-          // 🔥 المحتوى الرئيسي
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // 🟦 مربع اللوغو
                 Container(
                   width: 80,
                   height: 80,
@@ -78,28 +72,17 @@ class _SplashScreenState extends State<SplashScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
-                // 📝 اسم التطبيق
                 const Text(
                   'CareerAI',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.w600),
                 ),
-
                 const SizedBox(height: 8),
-
-                // 📝 النص الفرعي
                 const Text(
                   'AI-POWERED GROWTH',
                   style: TextStyle(
                     fontSize: 13,
                     color: Color(0xFF3B82F6),
-                    letterSpacing: 1.2,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
