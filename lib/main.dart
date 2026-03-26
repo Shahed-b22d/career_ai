@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-
+import 'screens/splash_screen.dart';
 import 'screens/auth_screen.dart';
+import 'screens/sign_up_screen.dart';
+import 'screens/upload_cv_screen.dart';
+import 'screens/roadmap_screen.dart';
+import 'screens/person_profile.dart';
 import 'screens/company_profile.dart';
 import 'screens/main_screen.dart';
-import 'screens/person_profile.dart';
-import 'screens/sign_up_screen.dart';
-import 'screens/splash_screen.dart';
-import 'screens/upload_cv_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -19,14 +19,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-
-      // 🔥 اسم التطبيق
       title: 'CareerAI',
 
-      // 🔥 أول شاشة
+      // 🔹 أول شاشة
       initialRoute: '/',
 
-      // 🔥 ربط الصفحات
+      // 🔹 ربط الصفحات
       routes: {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const AuthAndRoleSelectionWidget(),
@@ -35,9 +33,12 @@ class MyApp extends StatelessWidget {
         '/companyProfile': (context) => const CompanyProfileScreen(),
         '/home': (context) => const MainScreen(),
         '/uploadCV': (context) => const UploadScreen(),
+
+        // 🔹 واجهة Roadmap مرتبطة بـ Upload CV
+        '/roadmap': (context) => RoadmapScreen(),
       },
 
-      // 🔥 شكل التطبيق
+      // 🔹 Theme
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
