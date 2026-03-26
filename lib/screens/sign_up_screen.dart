@@ -14,6 +14,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
+  // 🔥 الجديد
+  final businessTypeController = TextEditingController();
+
   bool passwordVisible = false;
   bool confirmPasswordVisible = false;
   bool termsAccepted = false;
@@ -27,34 +30,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
     phoneController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
+
+    // 🔥 الجديد
+    businessTypeController.dispose();
+
     super.dispose();
   }
 
-  // 🔥 اللوجو (نفس السبلاش بدون صورة)
-  Widget appLogo() {
-    return Container(
-      width: 85,
-      height: 85,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E66F5), Color(0xFFFFD600)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: const Icon(Icons.auto_awesome, color: Colors.black, size: 35),
-    );
-  }
-
-  // 🔥 input احترافي
   InputDecoration customInput(String hint, IconData icon) {
     return InputDecoration(
       hintText: hint,
@@ -69,7 +51,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // 🔥 role card احترافي
   Widget buildRoleCard({
     required String title,
     required IconData icon,
@@ -121,6 +102,39 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
+  // 🔥 validation بسيط
+  bool validate() {
+    if (fullNameController.text.length < 3) {
+      showError("Name too short");
+      return false;
+    }
+    if (!emailController.text.contains("@")) {
+      showError("Invalid email");
+      return false;
+    }
+    if (phoneController.text.length != 10) {
+      showError("Phone must be 10 digits");
+      return false;
+    }
+    if (passwordController.text.length < 6) {
+      showError("Password too short");
+      return false;
+    }
+    if (passwordController.text != confirmPasswordController.text) {
+      showError("Passwords do not match");
+      return false;
+    }
+    if (!termsAccepted) {
+      showError("Accept terms first");
+      return false;
+    }
+    return true;
+  }
+
+  void showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -130,36 +144,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             children: [
-              const SizedBox(height: 20),
-
-              // 🔥 لوجو
-              appLogo(),
-
-              const SizedBox(height: 15),
+              const SizedBox(height: 40),
 
               const Text(
-                "CareerAI",
+                "Create Account",
                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
               ),
 
-              const SizedBox(height: 5),
-
-              const Text(
-                "Create your professional account",
-                style: TextStyle(color: Colors.grey),
-              ),
-
               const SizedBox(height: 30),
-
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "I am a...",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-
-              const SizedBox(height: 12),
 
               Row(
                 children: [
@@ -183,18 +175,31 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 controller: fullNameController,
                 decoration: customInput("Full Name", Icons.person),
               ),
+
               const SizedBox(height: 15),
 
               TextField(
                 controller: emailController,
                 decoration: customInput("Email", Icons.email),
               ),
+
               const SizedBox(height: 15),
 
               TextField(
                 controller: phoneController,
+                keyboardType: TextInputType.number,
                 decoration: customInput("Phone Number", Icons.phone),
               ),
+
+              // 🔥 الجديد (يظهر فقط للشركة)
+              if (selectedRole == "company") ...[
+                const SizedBox(height: 15),
+                TextField(
+                  controller: businessTypeController,
+                  decoration: customInput("Business Type", Icons.work),
+                ),
+              ],
+
               const SizedBox(height: 15),
 
               TextField(
@@ -219,7 +224,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               TextField(
                 controller: confirmPasswordController,
                 obscureText: !confirmPasswordVisible,
-                decoration: customInput("Confirm Password", Icons.shield)
+                decoration: customInput("Confirm Password", Icons.lock)
                     .copyWith(
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -259,7 +264,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
               const SizedBox(height: 15),
 
-              // 🔥 زر احترافي
               Container(
                 width: double.infinity,
                 height: 55,
@@ -271,7 +275,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
                 child: ElevatedButton(
                   onPressed: () {
-                    print("Create Account");
+                    if (!validate()) return;
+
+                    Navigator.pushReplacementNamed(
+                      context,
+                      selectedRole == "job"
+                          ? '/personProfile'
+                          : '/companyProfile',
+                      arguments: {
+                        "name": fullNameController.text,
+                        "email": emailController.text,
+                        "phone": phoneController.text,
+
+                        // 🔥 الجديد
+                        "businessType": businessTypeController.text,
+                      },
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
@@ -281,32 +300,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     "Create Account",
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              OutlinedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.g_mobiledata, size: 28),
-                label: const Text("Continue with Google"),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              GestureDetector(
-                onTap: () {
-                  Navigator.pushReplacementNamed(context, '/login');
-                },
-                child: const Text(
-                  "Already have an account? Login",
-                  style: TextStyle(color: Colors.blue),
                 ),
               ),
 
