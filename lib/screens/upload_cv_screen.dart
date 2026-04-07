@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/custom_button.dart';
+import '../../widgets/custom_input_field.dart';
 
 class UploadScreen extends StatefulWidget {
   const UploadScreen({super.key});
@@ -194,44 +196,54 @@ Education: ${education.text}
     );
   }
 
-  InputDecoration input(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: Colors.white,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide.none,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
-
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
+<<<<<<< HEAD
         title: const Text("Create CV"),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
+=======
+        title: const Text("Upload CV"),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppTheme.primaryGradient,
+          ),
+        ),
+        foregroundColor: Colors.white,
+>>>>>>> 50c5dd8 (feat: complete UI redesign, modern theme, add forgot password and post job screens)
       ),
 
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             GestureDetector(
               onTap: pickPDF,
               child: Container(
-                padding: const EdgeInsets.all(25),
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
-                  ),
+                  color: AppTheme.cardColor,
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: pickedFile != null ? Colors.green : AppTheme.primaryColor.withOpacity(0.5),
+                    width: 2,
+                    strokeAlign: BorderSide.strokeAlignOutside,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryColor.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
                 ),
+<<<<<<< HEAD
                 child: const Column(
                   children: [
                     Icon(Icons.upload_file, color: Colors.white, size: 40),
@@ -239,14 +251,38 @@ Education: ${education.text}
                     Text(
                       "Upload CV (PDF)",
                       style: TextStyle(color: Colors.white),
+=======
+                child: Column(
+                  children: [
+                    Icon(
+                      pickedFile != null ? Icons.check_circle_rounded : Icons.file_upload_outlined,
+                      color: pickedFile != null ? Colors.green : AppTheme.primaryColor,
+                      size: 60,
+>>>>>>> 50c5dd8 (feat: complete UI redesign, modern theme, add forgot password and post job screens)
                     ),
+                    const SizedBox(height: 16),
+                    Text(
+                      pickedFile != null ? "File selected successfully" : "Upload your CV (PDF)",
+                      style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                        fontSize: 18,
+                        color: pickedFile != null ? Colors.green : AppTheme.textPrimaryColor,
+                      ),
+                    ),
+                    if (pickedFile == null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        "Tap to browse files",
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ]
                   ],
                 ),
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 40),
 
+<<<<<<< HEAD
             TextField(controller: name, decoration: input("Full Name")),
             const SizedBox(height: 10),
 
@@ -255,33 +291,79 @@ Education: ${education.text}
 
             TextField(controller: phone, decoration: input("Phone")),
             const SizedBox(height: 10),
+=======
+            Row(
+              children: [
+                Expanded(child: Divider(color: Colors.grey.shade300)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    "Or Create Manually",
+                    style: TextStyle(color: AppTheme.textSecondaryColor, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(child: Divider(color: Colors.grey.shade300)),
+              ],
+            ),
+
+            const SizedBox(height: 30),
+
+            CustomInputField(hint: "Full Name", icon: Icons.person_outline, controller: name),
+            const SizedBox(height: 16),
+
+            CustomInputField(hint: "Email", icon: Icons.email_outlined, controller: email),
+            const SizedBox(height: 16),
+
+            CustomInputField(hint: "Phone", icon: Icons.phone_outlined, controller: phone),
+            const SizedBox(height: 16),
+>>>>>>> 50c5dd8 (feat: complete UI redesign, modern theme, add forgot password and post job screens)
 
             TextField(
               controller: summary,
               maxLines: 3,
+<<<<<<< HEAD
               decoration: input("Write short intro about you"),
+=======
+              decoration: const InputDecoration().copyWith(
+                hintText: "Professional Summary",
+                prefixIcon: const Icon(Icons.description_outlined, color: AppTheme.primaryColor),
+              ),
+>>>>>>> 50c5dd8 (feat: complete UI redesign, modern theme, add forgot password and post job screens)
             ),
-
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
 
             TextField(
               controller: skills,
+<<<<<<< HEAD
               maxLines: 2,
               decoration: input("Write your skills (e.g. teamwork, coding)"),
+=======
+              maxLines: 3,
+              decoration: const InputDecoration().copyWith(
+                hintText: "Skills (e.g. Management, Design...)",
+                prefixIcon: const Icon(Icons.star_outline_rounded, color: AppTheme.primaryColor),
+              ),
+>>>>>>> 50c5dd8 (feat: complete UI redesign, modern theme, add forgot password and post job screens)
             ),
-
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
 
             TextField(
               controller: experience,
               maxLines: 3,
+<<<<<<< HEAD
               decoration: input("Write your experience or projects"),
+=======
+              decoration: const InputDecoration().copyWith(
+                hintText: "Experience",
+                prefixIcon: const Icon(Icons.work_outline_rounded, color: AppTheme.primaryColor),
+              ),
+>>>>>>> 50c5dd8 (feat: complete UI redesign, modern theme, add forgot password and post job screens)
             ),
-
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
 
             TextField(
               controller: education,
+<<<<<<< HEAD
               maxLines: 2,
               decoration: input("Your education"),
             ),
@@ -291,7 +373,23 @@ Education: ${education.text}
             ElevatedButton(
               onPressed: generatePDF,
               child: const Text("Generate CV"),
+=======
+              maxLines: 3,
+              decoration: const InputDecoration().copyWith(
+                hintText: "Education",
+                prefixIcon: const Icon(Icons.school_outlined, color: AppTheme.primaryColor),
+              ),
+>>>>>>> 50c5dd8 (feat: complete UI redesign, modern theme, add forgot password and post job screens)
             ),
+
+            const SizedBox(height: 35),
+
+            CustomButton(
+              text: "Generate CV PDF",
+              onPressed: generatePDF,
+            ),
+            
+            const SizedBox(height: 100), // padding for bottom nav space
           ],
         ),
       ),

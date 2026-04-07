@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
+import '../widgets/custom_button.dart';
+import '../widgets/custom_input_field.dart';
 
 class AuthAndRoleSelectionWidget extends StatefulWidget {
   const AuthAndRoleSelectionWidget({super.key});
@@ -23,42 +26,23 @@ class _AuthAndRoleSelectionWidgetState
     super.dispose();
   }
 
-  // 🔥 نفس لوجو السبلاش
+  // 🔥 Logo 
   Widget appLogo() {
     return Container(
       width: 85,
       height: 85,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E66F5), Color(0xFFFFD600)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        borderRadius: BorderRadius.circular(24),
+        gradient: AppTheme.primaryGradient,
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
+            color: AppTheme.primaryColor.withOpacity(0.3),
             blurRadius: 15,
             offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: const Icon(Icons.auto_awesome, color: Colors.black, size: 35),
-    );
-  }
-
-  // 🔥 input احترافي
-  InputDecoration customInput(String hint, IconData icon) {
-    return InputDecoration(
-      hintText: hint,
-      prefixIcon: Icon(icon, color: Colors.blue),
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(vertical: 18),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
-        borderSide: BorderSide.none,
-      ),
+      child: const Icon(Icons.auto_awesome, color: Colors.white, size: 40),
     );
   }
 
@@ -82,39 +66,50 @@ class _AuthAndRoleSelectionWidgetState
           duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.symmetric(vertical: 18),
           decoration: BoxDecoration(
-            gradient: isSelected
-                ? const LinearGradient(
-                    colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
-                  )
-                : null,
-            color: isSelected ? null : Colors.white,
-            borderRadius: BorderRadius.circular(22),
+            gradient: isSelected ? AppTheme.primaryGradient : null,
+            color: isSelected ? null : AppTheme.cardColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected ? Colors.transparent : Colors.grey.withOpacity(0.2),
+              width: 1.5,
+            ),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+              if (!isSelected)
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 10,
+                ),
             ],
           ),
           child: Column(
             children: [
               Icon(
                 icon,
-                size: 28,
-                color: isSelected ? Colors.white : Colors.blue,
+                size: 32,
+                color: isSelected ? Colors.white : AppTheme.primaryColor,
               ),
               const SizedBox(height: 10),
-              Text(
-                title,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isSelected ? Colors.white : Colors.black,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: isSelected ? Colors.white : AppTheme.textPrimaryColor,
+                  ),
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                description,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isSelected ? Colors.white70 : Colors.grey,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  description,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isSelected ? Colors.white70 : AppTheme.textSecondaryColor,
+                  ),
                 ),
               ),
             ],
@@ -127,180 +122,216 @@ class _AuthAndRoleSelectionWidgetState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 10),
 
-              // 🔥 Logo
-              appLogo(),
+                // 🔥 Logo
+                appLogo(),
+                const SizedBox(height: 20),
 
-              const SizedBox(height: 15),
-
-              const Text(
-                "CareerAI",
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-              ),
-
-              const SizedBox(height: 5),
-
-              const Text(
-                "Welcome back 👋",
-                style: TextStyle(color: Colors.grey),
-              ),
-
-              const SizedBox(height: 30),
-
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "I am a...",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  "CareerAI",
+                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                    fontSize: 28,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 8),
 
-              const SizedBox(height: 12),
+                Text(
+                  "Welcome back 👋",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 35),
 
-              Row(
-                children: [
-                  buildRoleCard(
-                    title: "Job Seeker",
-                    description: "Find jobs & learn",
-                    icon: Icons.person,
-                    value: "job",
-                  ),
-                  const SizedBox(width: 12),
-                  buildRoleCard(
-                    title: "Company",
-                    description: "Hire talent",
-                    icon: Icons.business,
-                    value: "company",
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 30),
-
-              // 🔥 Email
-              TextField(
-                controller: emailController,
-                decoration: customInput("Email", Icons.email),
-              ),
-
-              const SizedBox(height: 15),
-
-              // 🔥 Password
-              TextField(
-                controller: passwordController,
-                obscureText: !passwordVisible,
-                decoration: customInput("Password", Icons.lock).copyWith(
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      passwordVisible ? Icons.visibility : Icons.visibility_off,
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "I am a...",
+                    style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                      fontSize: 18,
                     ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                Row(
+                  children: [
+                    buildRoleCard(
+                      title: "Job Seeker",
+                      description: "Find jobs & learn",
+                      icon: Icons.person_rounded,
+                      value: "job",
+                    ),
+                    const SizedBox(width: 16),
+                    buildRoleCard(
+                      title: "Company",
+                      description: "Hire talent",
+                      icon: Icons.business_rounded,
+                      value: "company",
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 35),
+
+                // 🔥 Email
+                CustomInputField(
+                  hint: "Email address",
+                  icon: Icons.email_rounded,
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 16),
+
+                // 🔥 Password
+                CustomInputField(
+                  hint: "Password",
+                  icon: Icons.lock_rounded,
+                  controller: passwordController,
+                  isPassword: true,
+                  obscureText: !passwordVisible,
+                  onToggleObscure: () {
+                    setState(() {
+                      passwordVisible = !passwordVisible;
+                    });
+                  },
+                ),
+                const SizedBox(height: 8),
+
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
                     onPressed: () {
-                      setState(() {
-                        passwordVisible = !passwordVisible;
-                      });
+                      Navigator.pushNamed(context, '/forgotPassword');
                     },
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppTheme.primaryColor,
+                    ),
+                    child: const Text(
+                      "Forgot Password?",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(height: 16),
 
-              const SizedBox(height: 8),
-
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {},
-                  child: const Text("Forgot Password?"),
-                ),
-              ),
-
-              const SizedBox(height: 15),
-
-              // 🔥 زر Login احترافي (Gradient)
-              Container(
-                width: double.infinity,
-                height: 55,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
-                  ),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: ElevatedButton(
+                // 🔥 Login Button 
+                CustomButton(
+                  text: "Login",
                   onPressed: () {
-                    print("Login pressed");
                     Navigator.pushReplacementNamed(context, '/home');
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
+                ),
+                const SizedBox(height: 16),
+
+                // 🔥 Sign Up Button
+                OutlinedButton(
+                  onPressed: () {
+                    Navigator.pushReplacementNamed(context, '/signup');
+                  },
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 55),
+                    side: const BorderSide(color: AppTheme.primaryColor, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    foregroundColor: AppTheme.primaryColor,
                   ),
                   child: const Text(
-                    "Login",
+                    "Create New Account",
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
-              ),
+                const SizedBox(height: 30),
 
-              const SizedBox(height: 15),
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        "OR",
+                        style: TextStyle(color: AppTheme.textSecondaryColor, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                  ],
+                ),
+                const SizedBox(height: 25),
 
-              // 🔥 زر Sign Up
-              OutlinedButton(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/signup');
-                },
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    try {
+                      // 🔹 تمت محاكاة تسجيل الدخول هنا لتخطي خطأ التحزيم (Compile Error)
+                      // لتعمل مكتبة google_sign_in بشكل حقيقي على الأندرويد، يجب ضبط ملفات Firebase (google-services.json)
+                      // وكذلك تعديل ملفات build.gradle، وإلا سيفشل التطبيق في الإقلاع.
+                      
+                      /* 
+                      final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+                      final account = await googleSignIn.signIn(); 
+                      */
+                      
+                      // - - - - - - - محاكاة مؤقتة - - - - - - -
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) => const Center(child: CircularProgressIndicator()),
+                      );
+                      
+                      await Future.delayed(const Duration(seconds: 2)); // محاكاة وقت التحميل
+                      
+                      if (mounted) {
+                        Navigator.pop(context); // إغلاق شاشة التحميل
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Welcome, User! (Simulated)'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                        Navigator.pushReplacementNamed(context, '/home');
+                      }
+                      
+                    } catch (error) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Google Sign-In failed or cancelled."),
+                            backgroundColor: Colors.redAccent,
+                          ),
+                        );
+                      }
+                      print("Google Sign In Error: $error");
+                    }
+                  },
+                  icon: const Icon(Icons.g_mobiledata, size: 36, color: Colors.blue),
+                  label: const Text(
+                    "Continue with Google",
+                    style: TextStyle(fontSize: 16, color: AppTheme.textPrimaryColor),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 55),
+                    backgroundColor: Colors.white,
+                    side: BorderSide(color: Colors.grey.shade300),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                 ),
-                child: const Text("Create New Account"),
-              ),
+                const SizedBox(height: 30),
 
-              const SizedBox(height: 25),
-
-              Row(
-                children: const [
-                  Expanded(child: Divider()),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Text("OR"),
-                  ),
-                  Expanded(child: Divider()),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              OutlinedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.g_mobiledata, size: 28),
-                label: const Text("Continue with Google"),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
+                Text(
+                  "By continuing, you agree to our Terms & Privacy Policy",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: AppTheme.textSecondaryColor),
                 ),
-              ),
-
-              const SizedBox(height: 20),
-
-              const Text(
-                "By continuing, you agree to our Terms & Privacy Policy",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-
-              const SizedBox(height: 20),
-            ],
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),

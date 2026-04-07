@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -8,10 +9,29 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+
   @override
   void initState() {
     super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    );
+
+    _controller.forward();
 
     // ⏱ الانتقال بعد 3 ثواني للـ Login
     Timer(const Duration(seconds: 3), () {
@@ -20,73 +40,104 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      backgroundColor: AppTheme.backgroundColor,
       body: Stack(
         children: [
+          // 🔹 خلفية عصرية بتموجات خفيفة
           Positioned(
-            top: -100,
-            right: -80,
+            top: -150,
+            right: -100,
             child: Container(
-              width: 300,
-              height: 300,
+              width: 400,
+              height: 400,
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.08),
                 shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppTheme.secondaryColor.withOpacity(0.15),
+                    Colors.transparent,
+                  ],
+                ),
               ),
             ),
           ),
           Positioned(
-            bottom: -120,
-            left: -80,
+            bottom: -150,
+            left: -100,
             child: Container(
-              width: 300,
-              height: 300,
+              width: 400,
+              height: 400,
               decoration: BoxDecoration(
-                color: Colors.purple.withOpacity(0.08),
                 shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppTheme.primaryColor.withOpacity(0.15),
+                    Colors.transparent,
+                  ],
+                ),
               ),
             ),
           ),
+          
+          // 🔹 المحتوى الأساسي
           Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(22),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF1E66F5), Color(0xFFFFD600)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: ScaleTransition(
+                scale: _scaleAnimation,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(28),
+                        gradient: AppTheme.primaryGradient,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryColor.withOpacity(0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.auto_awesome,
+                          color: Colors.white,
+                          size: 45,
+                        ),
+                      ),
                     ),
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.auto_awesome,
-                      color: Colors.black,
-                      size: 30,
+                    const SizedBox(height: 24),
+                    Text(
+                      'CareerAI',
+                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                            fontSize: 32,
+                            letterSpacing: 1.2,
+                          ),
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'AI-POWERED CAREER GROWTH',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppTheme.primaryColor,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                          ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 20),
-                const Text(
-                  'CareerAI',
-                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'AI-POWERED GROWTH',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF3B82F6),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],
