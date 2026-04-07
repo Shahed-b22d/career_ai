@@ -1,7 +1,9 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../theme/app_theme.dart';
+import '../widgets/custom_button.dart';
+import '../widgets/custom_input_field.dart';
 
 class CompanyProfileScreen extends StatefulWidget {
   const CompanyProfileScreen({super.key});
@@ -43,6 +45,15 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
     ).animate(_controller);
 
     _controller.forward();
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final data = ModalRoute.of(context)!.settings.arguments as Map?;
+      if (data != null) {
+        companyNameController.text = data["name"] ?? "";
+        emailController.text = data["email"] ?? "";
+        phoneController.text = data["phone"] ?? "";
+      }
+    });
   }
 
   @override
@@ -65,19 +76,6 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
     }
   }
 
-  InputDecoration input(String hint, IconData icon) {
-    return InputDecoration(
-      hintText: hint,
-      prefixIcon: Icon(icon, color: Colors.blue),
-      filled: true,
-      fillColor: Colors.white,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide.none,
-      ),
-    );
-  }
-
   String? validateEmail(String? v) {
     if (v == null || v.isEmpty) return "Required";
     if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w]{2,4}$').hasMatch(v)) {
@@ -96,50 +94,58 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
 
   @override
   Widget build(BuildContext context) {
-    // ✅ استقبال الداتا من signup
-    final data = ModalRoute.of(context)!.settings.arguments as Map?;
-
-    if (data != null) {
-      companyNameController.text = data["name"] ?? "";
-      emailController.text = data["email"] ?? "";
-      phoneController.text = data["phone"] ?? "";
-    }
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
-
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.pushNamed(context, '/postJob');
+        },
+        icon: const Icon(Icons.add_rounded),
+        label: const Text("Post Job"),
+        backgroundColor: AppTheme.primaryColor,
+        foregroundColor: Colors.white,
+      ),
       body: FadeTransition(
         opacity: fade,
         child: SlideTransition(
           position: slide,
           child: Column(
             children: [
-              // 🔥 HEADER نفس البيرسون
+              // 🔥 HEADER المحسن
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.only(top: 60, bottom: 30),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
+                padding: const EdgeInsets.only(top: 60, bottom: 40),
+                decoration: BoxDecoration(
+                  gradient: AppTheme.primaryGradient,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(40),
+                    bottomRight: Radius.circular(40),
                   ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(35),
-                    bottomRight: Radius.circular(35),
-                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryColor.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
                     Stack(
                       children: [
-                        CircleAvatar(
-                          radius: 45,
-                          backgroundColor: Colors.white,
-                          backgroundImage: image != null
-                              ? FileImage(image!)
-                              : null,
-                          child: image == null
-                              ? const Icon(Icons.business, size: 40)
-                              : null,
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: CircleAvatar(
+                            radius: 50,
+                            backgroundColor: AppTheme.backgroundColor,
+                            backgroundImage: image != null ? FileImage(image!) : null,
+                            child: image == null
+                                ? const Icon(Icons.business_rounded, size: 50, color: AppTheme.textSecondaryColor)
+                                : null,
+                          ),
                         ),
                         Positioned(
                           bottom: 0,
@@ -147,28 +153,28 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
                           child: GestureDetector(
                             onTap: pickImage,
                             child: Container(
-                              decoration: const BoxDecoration(
-                                color: Colors.blue,
+                              decoration: BoxDecoration(
+                                color: AppTheme.secondaryColor,
                                 shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 3),
                               ),
-                              padding: const EdgeInsets.all(6),
+                              padding: const EdgeInsets.all(8),
                               child: const Icon(
-                                Icons.edit,
+                                Icons.camera_alt_rounded,
                                 color: Colors.white,
-                                size: 18,
+                                size: 20,
                               ),
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    const Text(
+                    const SizedBox(height: 16),
+                    Text(
                       "Company Profile",
-                      style: TextStyle(
+                      style: Theme.of(context).textTheme.displayMedium?.copyWith(
                         color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 24,
                       ),
                     ),
                   ],
@@ -180,94 +186,98 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
               // 🔥 FORM
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Form(
                     key: _formKey,
-                    child: Column(
-                      children: [
-                        TextFormField(
-                          controller: companyNameController,
-                          decoration: input("Company Name", Icons.business),
-                          validator: (v) =>
-                              v == null || v.isEmpty ? "Required" : null,
-                        ),
-
-                        const SizedBox(height: 15),
-
-                        TextFormField(
-                          controller: emailController,
-                          decoration: input("Email", Icons.email),
-                          validator: validateEmail,
-                        ),
-
-                        const SizedBox(height: 15),
-
-                        TextFormField(
-                          controller: phoneController,
-                          decoration: input("Phone", Icons.phone),
-                          keyboardType: TextInputType.number,
-                          validator: validatePhone,
-                        ),
-
-                        const SizedBox(height: 15),
-
-                        // ✅ نوع العمل
-                        DropdownButtonFormField(
-                          value: workType,
-                          decoration: input("Work Type", Icons.work),
-                          items: ["IT", "Medical", "Engineering", "Other"]
-                              .map(
-                                (e) =>
-                                    DropdownMenuItem(value: e, child: Text(e)),
-                              )
-                              .toList(),
-                          onChanged: (v) {
-                            setState(() {
-                              workType = v.toString();
-                            });
-                          },
-                        ),
-
-                        const SizedBox(height: 15),
-
-                        TextFormField(
-                          controller: descriptionController,
-                          maxLines: 3,
-                          decoration: input(
-                            "Company Description",
-                            Icons.description,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 10),
+                          CustomInputField(
+                            hint: "Company Name",
+                            icon: Icons.business_outlined,
+                            controller: companyNameController,
+                            validator: (v) => v == null || v.isEmpty ? "Required" : null,
                           ),
-                          validator: (v) =>
-                              v == null || v.isEmpty ? "Required" : null,
-                        ),
+                          const SizedBox(height: 16),
 
-                        const Spacer(),
+                          CustomInputField(
+                            hint: "Email",
+                            icon: Icons.email_outlined,
+                            controller: emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            validator: validateEmail,
+                          ),
+                          const SizedBox(height: 16),
 
-                        Container(
-                          width: double.infinity,
-                          height: 55,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
+                          CustomInputField(
+                            hint: "Phone",
+                            icon: Icons.phone_outlined,
+                            controller: phoneController,
+                            keyboardType: TextInputType.number,
+                            validator: validatePhone,
+                          ),
+                          const SizedBox(height: 16),
+
+                          // ✅ نوع العمل
+                          DropdownButtonFormField<String>(
+                            value: workType,
+                            dropdownColor: AppTheme.cardColor,
+                            decoration: InputDecoration(
+                              hintText: "Work Type",
+                              prefixIcon: const Icon(Icons.work_outline, color: AppTheme.primaryColor),
+                              filled: true,
+                              fillColor: AppTheme.cardColor,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
                             ),
-                            borderRadius: BorderRadius.circular(18),
+                            items: ["IT", "Medical", "Engineering", "Other"]
+                                .map(
+                                  (e) => DropdownMenuItem(value: e, child: Text(e)),
+                                )
+                                .toList(),
+                            onChanged: (v) {
+                              setState(() {
+                                if (v != null) workType = v;
+                              });
+                            },
                           ),
-                          child: ElevatedButton(
+                          const SizedBox(height: 16),
+
+                          TextFormField(
+                            controller: descriptionController,
+                            maxLines: 3,
+                            decoration: InputDecoration(
+                              hintText: "Company Description",
+                              prefixIcon: const Icon(Icons.description_outlined, color: AppTheme.primaryColor),
+                              filled: true,
+                              fillColor: AppTheme.cardColor,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            validator: (v) => v == null || v.isEmpty ? "Required" : null,
+                          ),
+                          const SizedBox(height: 40),
+
+                          CustomButton(
+                            text: "Save Changes",
                             onPressed: () {
                               if (!_formKey.currentState!.validate()) return;
-
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("Saved ✅")),
+                                const SnackBar(
+                                  content: Text("Profile updated successfully ✅"),
+                                  backgroundColor: Colors.green,
+                                ),
                               );
                             },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                            ),
-                            child: const Text("Save"),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 100),
+                        ],
+                      ),
                     ),
                   ),
                 ),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/custom_button.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -49,50 +51,50 @@ class _HomeScreenState extends State<HomeScreen>
             duration: const Duration(milliseconds: 800),
             tween: Tween(begin: 0.8, end: 1.0),
             builder: (context, value, child) {
-              return Transform.scale(scale: value, child: child);
+              return Transform.scale(scale: value as double, child: child);
             },
             child: Container(
               padding: const EdgeInsets.all(25),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
-                ),
+                gradient: AppTheme.primaryGradient,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.blue.withOpacity(0.3),
+                    color: AppTheme.primaryColor.withOpacity(0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
                 ],
               ),
               child: const Icon(
-                Icons.upload_file,
+                Icons.upload_file_rounded,
                 size: 50,
                 color: Colors.white,
               ),
             ),
           ),
 
-          const SizedBox(height: 25),
+          const SizedBox(height: 35),
 
-          const Text(
+          Text(
             "Start Your Journey 🚀",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.displayMedium?.copyWith(
+              fontSize: 22,
+            ),
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
-          const Text(
-            "Upload your CV to generate your\ncareer roadmap",
+          Text(
+            "Upload your CV to generate your\ncareer roadmap powered by AI",
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
 
-          const SizedBox(height: 25),
+          const SizedBox(height: 35),
 
-          // ✅ التعديل هون فقط
-          ElevatedButton(
+          CustomButton(
+            text: "Upload CV",
             onPressed: () async {
               final result = await Navigator.pushNamed(context, '/uploadCV');
 
@@ -102,14 +104,6 @@ class _HomeScreenState extends State<HomeScreen>
                 });
               }
             },
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-              backgroundColor: Colors.blue,
-            ),
-            child: const Text("Upload CV"),
           ),
         ],
       ),
@@ -126,22 +120,39 @@ class _HomeScreenState extends State<HomeScreen>
             duration: const Duration(seconds: 1),
             builder: (context, value, _) {
               return SizedBox(
-                height: 170,
-                width: 170,
+                height: 180,
+                width: 180,
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    CircularProgressIndicator(
-                      value: value,
-                      strokeWidth: 10,
-                      backgroundColor: Colors.grey.shade200,
-                    ),
-                    Text(
-                      "${(value * 100).toInt()}%",
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
+                    SizedBox(
+                      height: 160,
+                      width: 160,
+                      child: CircularProgressIndicator(
+                        value: value as double,
+                        strokeWidth: 12,
+                        backgroundColor: Colors.grey.shade200,
+                        color: AppTheme.primaryColor,
                       ),
+                    ),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "${(value * 100).toInt()}%",
+                          style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                            fontSize: 32,
+                            color: AppTheme.primaryColor,
+                          ),
+                        ),
+                        Text(
+                          "Completed",
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.textSecondaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -149,39 +160,63 @@ class _HomeScreenState extends State<HomeScreen>
             },
           ),
 
-          const SizedBox(height: 30),
+          const SizedBox(height: 40),
 
-          roadmapItem("Learn Flutter Basics"),
-          roadmapItem("Build Real Projects"),
-          roadmapItem("State Management"),
-          roadmapItem("Practice Interviews"),
+          roadmapItem("Learn Flutter Basics", true),
+          roadmapItem("Build Real Projects", false),
+          roadmapItem("State Management", false),
+          roadmapItem("Practice Interviews", false),
+          
+          const SizedBox(height: 100), // padding for bottom nav
         ],
       ),
     );
   }
 
-  Widget roadmapItem(String text) {
+  Widget roadmapItem(String text, bool isCompleted) {
     return TweenAnimationBuilder(
       duration: const Duration(milliseconds: 500),
       tween: Tween(begin: 20.0, end: 0.0),
       builder: (context, value, child) {
-        return Transform.translate(offset: Offset(0, value), child: child);
+        return Transform.translate(offset: Offset(0, value as double), child: child);
       },
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
-        padding: const EdgeInsets.all(15),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.cardColor,
           borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isCompleted ? AppTheme.primaryColor.withOpacity(0.5) : Colors.transparent,
+            width: 1.5,
+          ),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03), 
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
         child: Row(
           children: [
-            const Icon(Icons.check_circle, color: Colors.green),
-            const SizedBox(width: 10),
-            Text(text),
+            Icon(
+              isCompleted ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+              color: isCompleted ? AppTheme.primaryColor : Colors.grey.shade400,
+              size: 28,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: isCompleted ? AppTheme.textPrimaryColor : AppTheme.textSecondaryColor,
+                  decoration: isCompleted ? TextDecoration.lineThrough : null,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -191,9 +226,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
-
-      // ❌ ما في BottomNavigationBar هون (انحذف)
+      backgroundColor: AppTheme.backgroundColor,
       body: FadeTransition(
         opacity: fade,
         child: SlideTransition(
@@ -202,33 +235,44 @@ class _HomeScreenState extends State<HomeScreen>
             children: [
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.only(top: 60, bottom: 25),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
+                padding: const EdgeInsets.only(top: 60, bottom: 30),
+                decoration: BoxDecoration(
+                  gradient: AppTheme.primaryGradient,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(40),
+                    bottomRight: Radius.circular(40),
                   ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(35),
-                    bottomRight: Radius.circular(35),
-                  ),
-                ),
-                child: const Center(
-                  child: Text(
-                    "Career Roadmap",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryColor.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
                     ),
-                  ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      "Career Roadmap",
+                      style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                        color: Colors.white,
+                        fontSize: 24,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "AI-Generated Learning Path",
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
-              const SizedBox(height: 20),
-
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 500),
                     child: hasCV ? buildRoadmap() : buildEmptyState(),

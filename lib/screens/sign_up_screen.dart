@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
+import '../widgets/custom_button.dart';
+import '../widgets/custom_input_field.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -13,8 +16,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final phoneController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
-
-  // 🔥 الجديد
   final businessTypeController = TextEditingController();
 
   bool passwordVisible = false;
@@ -30,25 +31,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     phoneController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
-
-    // 🔥 الجديد
     businessTypeController.dispose();
-
     super.dispose();
-  }
-
-  InputDecoration customInput(String hint, IconData icon) {
-    return InputDecoration(
-      hintText: hint,
-      prefixIcon: Icon(icon, color: Colors.blue),
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(vertical: 18),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
-        borderSide: BorderSide.none,
-      ),
-    );
   }
 
   Widget buildRoleCard({
@@ -69,30 +53,38 @@ class _SignUpScreenState extends State<SignUpScreen> {
           duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.symmetric(vertical: 20),
           decoration: BoxDecoration(
-            gradient: isSelected
-                ? const LinearGradient(
-                    colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
-                  )
-                : null,
-            color: isSelected ? null : Colors.white,
-            borderRadius: BorderRadius.circular(22),
+            gradient: isSelected ? AppTheme.primaryGradient : null,
+            color: isSelected ? null : AppTheme.cardColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected ? Colors.transparent : Colors.grey.withOpacity(0.2),
+              width: 1.5,
+            ),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+              if (!isSelected)
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 10,
+                ),
             ],
           ),
           child: Column(
             children: [
               Icon(
                 icon,
-                size: 30,
-                color: isSelected ? Colors.white : Colors.blue,
+                size: 32,
+                color: isSelected ? Colors.white : AppTheme.primaryColor,
               ),
               const SizedBox(height: 10),
-              Text(
-                title,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isSelected ? Colors.white : Colors.black,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: isSelected ? Colors.white : AppTheme.textPrimaryColor,
+                  ),
                 ),
               ),
             ],
@@ -102,7 +94,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // 🔥 validation بسيط
   bool validate() {
     if (fullNameController.text.length < 3) {
       showError("Name too short");
@@ -132,178 +123,166 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   void showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 40),
-
-              const Text(
+              const SizedBox(height: 10),
+              Text(
                 "Create Account",
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                  fontSize: 32,
+                ),
               ),
-
+              const SizedBox(height: 8),
+              Text(
+                "Join CareerAI to accelerate your growth.",
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
               const SizedBox(height: 30),
 
               Row(
                 children: [
                   buildRoleCard(
                     title: "Job Seeker",
-                    icon: Icons.person,
+                    icon: Icons.person_rounded,
                     value: "job",
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   buildRoleCard(
                     title: "Company",
-                    icon: Icons.business,
+                    icon: Icons.business_rounded,
                     value: "company",
                   ),
                 ],
               ),
+              const SizedBox(height: 30),
 
-              const SizedBox(height: 25),
-
-              TextField(
+              CustomInputField(
+                hint: "Full Name",
+                icon: Icons.person_outline_rounded,
                 controller: fullNameController,
-                decoration: customInput("Full Name", Icons.person),
               ),
+              const SizedBox(height: 16),
 
-              const SizedBox(height: 15),
-
-              TextField(
+              CustomInputField(
+                hint: "Email address",
+                icon: Icons.email_outlined,
                 controller: emailController,
-                decoration: customInput("Email", Icons.email),
+                keyboardType: TextInputType.emailAddress,
               ),
+              const SizedBox(height: 16),
 
-              const SizedBox(height: 15),
-
-              TextField(
+              CustomInputField(
+                hint: "Phone Number",
+                icon: Icons.phone_outlined,
                 controller: phoneController,
-                keyboardType: TextInputType.number,
-                decoration: customInput("Phone Number", Icons.phone),
+                keyboardType: TextInputType.phone,
               ),
 
-              // 🔥 الجديد (يظهر فقط للشركة)
               if (selectedRole == "company") ...[
-                const SizedBox(height: 15),
-                TextField(
+                const SizedBox(height: 16),
+                CustomInputField(
+                  hint: "Business Type",
+                  icon: Icons.work_outline_rounded,
                   controller: businessTypeController,
-                  decoration: customInput("Business Type", Icons.work),
                 ),
               ],
 
-              const SizedBox(height: 15),
+              const SizedBox(height: 16),
 
-              TextField(
+              CustomInputField(
+                hint: "Password",
+                icon: Icons.lock_outline_rounded,
                 controller: passwordController,
+                isPassword: true,
                 obscureText: !passwordVisible,
-                decoration: customInput("Password", Icons.lock).copyWith(
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      passwordVisible ? Icons.visibility : Icons.visibility_off,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        passwordVisible = !passwordVisible;
-                      });
-                    },
-                  ),
-                ),
+                onToggleObscure: () {
+                  setState(() {
+                    passwordVisible = !passwordVisible;
+                  });
+                },
               ),
+              const SizedBox(height: 16),
 
-              const SizedBox(height: 15),
-
-              TextField(
+              CustomInputField(
+                hint: "Confirm Password",
+                icon: Icons.lock_outline_rounded,
                 controller: confirmPasswordController,
+                isPassword: true,
                 obscureText: !confirmPasswordVisible,
-                decoration: customInput("Confirm Password", Icons.lock)
-                    .copyWith(
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          confirmPasswordVisible
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            confirmPasswordVisible = !confirmPasswordVisible;
-                          });
-                        },
-                      ),
-                    ),
+                onToggleObscure: () {
+                  setState(() {
+                    confirmPasswordVisible = !confirmPasswordVisible;
+                  });
+                },
               ),
-
-              const SizedBox(height: 10),
+              const SizedBox(height: 20),
 
               Row(
                 children: [
                   Checkbox(
                     value: termsAccepted,
+                    activeColor: AppTheme.primaryColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                     onChanged: (value) {
                       setState(() {
                         termsAccepted = value ?? false;
                       });
                     },
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      "I agree to Terms & Privacy Policy",
-                      style: TextStyle(fontSize: 12),
+                      "I agree to the Terms of Service & Privacy Policy",
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: 30),
 
-              const SizedBox(height: 15),
+              CustomButton(
+                text: "Create Account",
+                onPressed: () {
+                  if (!validate()) return;
 
-              Container(
-                width: double.infinity,
-                height: 55,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
-                  ),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (!validate()) return;
-
-                    Navigator.pushReplacementNamed(
-                      context,
-                      selectedRole == "job"
-                          ? '/personProfile'
-                          : '/companyProfile',
-                      arguments: {
-                        "name": fullNameController.text,
-                        "email": emailController.text,
-                        "phone": phoneController.text,
-
-                        // 🔥 الجديد
-                        "businessType": businessTypeController.text,
-                      },
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                  ),
-                  child: const Text(
-                    "Create Account",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
+                  Navigator.pushReplacementNamed(
+                    context,
+                    selectedRole == "job" ? '/personProfile' : '/companyProfile',
+                    arguments: {
+                      "name": fullNameController.text,
+                      "email": emailController.text,
+                      "phone": phoneController.text,
+                      "businessType": businessTypeController.text,
+                    },
+                  );
+                },
               ),
-
-              const SizedBox(height: 20),
+              const SizedBox(height: 40),
             ],
           ),
         ),
