@@ -87,15 +87,14 @@ Education: ${education.text}
     print(response.body);
 
     if (response.statusCode != 200) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("API Error ❌")));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("API Error ❌")));
+      }
       return;
     }
 
     final data = jsonDecode(response.body);
     final aiText = data["choices"][0]["message"]["content"];
-
     final jsonData = jsonDecode(aiText);
 
     setState(() {
@@ -105,9 +104,9 @@ Education: ${education.text}
       education.text = jsonData["education"];
     });
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text("Improved Successfully ✅")));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Improved Successfully ✅")));
+    }
   }
 
   // 📄 PDF
@@ -171,8 +170,8 @@ Education: ${education.text}
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("Your CV is ready 🎉"),
-
+              const Text("Your CV is ready 🎉", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () async {
                   await Printing.layoutPdf(
@@ -181,11 +180,11 @@ Education: ${education.text}
                 },
                 child: const Text("Download CV"),
               ),
-
+              const SizedBox(height: 8),
               OutlinedButton(
                 onPressed: () async {
                   await improveWithAI();
-                  Navigator.pop(context);
+                  if (mounted) Navigator.pop(context);
                 },
                 child: const Text("✨ Improve with AI"),
               ),
@@ -201,12 +200,6 @@ Education: ${education.text}
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-<<<<<<< HEAD
-        title: const Text("Create CV"),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-=======
         title: const Text("Upload CV"),
         flexibleSpace: Container(
           decoration: const BoxDecoration(
@@ -214,7 +207,6 @@ Education: ${education.text}
           ),
         ),
         foregroundColor: Colors.white,
->>>>>>> 50c5dd8 (feat: complete UI redesign, modern theme, add forgot password and post job screens)
       ),
 
       body: SingleChildScrollView(
@@ -243,22 +235,12 @@ Education: ${education.text}
                     ),
                   ],
                 ),
-<<<<<<< HEAD
-                child: const Column(
-                  children: [
-                    Icon(Icons.upload_file, color: Colors.white, size: 40),
-                    SizedBox(height: 10),
-                    Text(
-                      "Upload CV (PDF)",
-                      style: TextStyle(color: Colors.white),
-=======
                 child: Column(
                   children: [
                     Icon(
                       pickedFile != null ? Icons.check_circle_rounded : Icons.file_upload_outlined,
                       color: pickedFile != null ? Colors.green : AppTheme.primaryColor,
                       size: 60,
->>>>>>> 50c5dd8 (feat: complete UI redesign, modern theme, add forgot password and post job screens)
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -282,16 +264,6 @@ Education: ${education.text}
 
             const SizedBox(height: 40),
 
-<<<<<<< HEAD
-            TextField(controller: name, decoration: input("Full Name")),
-            const SizedBox(height: 10),
-
-            TextField(controller: email, decoration: input("Email")),
-            const SizedBox(height: 10),
-
-            TextField(controller: phone, decoration: input("Phone")),
-            const SizedBox(height: 10),
-=======
             Row(
               children: [
                 Expanded(child: Divider(color: Colors.grey.shade300)),
@@ -316,70 +288,44 @@ Education: ${education.text}
 
             CustomInputField(hint: "Phone", icon: Icons.phone_outlined, controller: phone),
             const SizedBox(height: 16),
->>>>>>> 50c5dd8 (feat: complete UI redesign, modern theme, add forgot password and post job screens)
 
             TextField(
               controller: summary,
               maxLines: 3,
-<<<<<<< HEAD
-              decoration: input("Write short intro about you"),
-=======
               decoration: const InputDecoration().copyWith(
                 hintText: "Professional Summary",
                 prefixIcon: const Icon(Icons.description_outlined, color: AppTheme.primaryColor),
               ),
->>>>>>> 50c5dd8 (feat: complete UI redesign, modern theme, add forgot password and post job screens)
             ),
             const SizedBox(height: 16),
 
             TextField(
               controller: skills,
-<<<<<<< HEAD
-              maxLines: 2,
-              decoration: input("Write your skills (e.g. teamwork, coding)"),
-=======
               maxLines: 3,
               decoration: const InputDecoration().copyWith(
                 hintText: "Skills (e.g. Management, Design...)",
                 prefixIcon: const Icon(Icons.star_outline_rounded, color: AppTheme.primaryColor),
               ),
->>>>>>> 50c5dd8 (feat: complete UI redesign, modern theme, add forgot password and post job screens)
             ),
             const SizedBox(height: 16),
 
             TextField(
               controller: experience,
               maxLines: 3,
-<<<<<<< HEAD
-              decoration: input("Write your experience or projects"),
-=======
               decoration: const InputDecoration().copyWith(
                 hintText: "Experience",
                 prefixIcon: const Icon(Icons.work_outline_rounded, color: AppTheme.primaryColor),
               ),
->>>>>>> 50c5dd8 (feat: complete UI redesign, modern theme, add forgot password and post job screens)
             ),
             const SizedBox(height: 16),
 
             TextField(
               controller: education,
-<<<<<<< HEAD
-              maxLines: 2,
-              decoration: input("Your education"),
-            ),
-
-            const SizedBox(height: 20),
-
-            ElevatedButton(
-              onPressed: generatePDF,
-              child: const Text("Generate CV"),
-=======
               maxLines: 3,
               decoration: const InputDecoration().copyWith(
                 hintText: "Education",
                 prefixIcon: const Icon(Icons.school_outlined, color: AppTheme.primaryColor),
               ),
->>>>>>> 50c5dd8 (feat: complete UI redesign, modern theme, add forgot password and post job screens)
             ),
 
             const SizedBox(height: 35),
