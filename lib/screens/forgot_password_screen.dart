@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_input_field.dart';
+import '../services/notification_service.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -12,17 +14,10 @@ class ForgotPasswordScreen extends StatefulWidget {
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final emailController = TextEditingController();
-  final newPasswordController = TextEditingController();
-  final confirmPasswordController = TextEditingController();
   
-  bool isPasswordVisible = false;
-  bool isConfirmVisible = false;
-
   @override
   void dispose() {
     emailController.dispose();
-    newPasswordController.dispose();
-    confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -34,40 +29,61 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       return;
     }
 
-    if (newPasswordController.text.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Password must be at least 6 characters."), backgroundColor: Colors.redAccent),
-      );
-      return;
-    }
-
-    if (newPasswordController.text != confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Passwords do not match."), backgroundColor: Colors.redAccent),
-      );
-      return;
-    }
-
-    // 🔹 محاكاة تغيير كلمة المرور والاتصال بالسيرفر
+    // إظهار علامة التحميل
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => const Center(child: CircularProgressIndicator()),
     );
 
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (mounted) {
-      Navigator.pop(context); // إغلاق مربع التحميل
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Password reset successfully! ✅"),
-          backgroundColor: Colors.green,
-        ),
+    try {
+      // إرسال طلب استعادة كلمة المرور لفايربيس
+      await FirebaseAuth.instance.sendPasswordResetEmail(
+        email: emailController.text.trim(),
       );
-      
-      // العودة لصفحة تسجيل الدخول
-      Navigator.pop(context); 
+
+      if (mounted) {
+        Navigator.pop(context); // إغلاق مربع التحميل
+        
+        // 🔹 عرض الإشعار المحلي (Push Notification) 🔹
+        NotificationService().showNotification(
+          id: 1, 
+          title: "CareerAI Password Reset", 
+          body: "A reset link has been sent to your email successfully. Please check your inbox.",
+          payload: 'open_mail',
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Reset link sent! Check your email. ✅"),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 4),
+          ),
+        );
+        
+        // العودة لصفحة تسجيل الدخول
+        Navigator.pop(context); 
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // إغلاق مربع التحميل
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message ?? "Failed to send reset link."),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // إغلاق مربع التحميل
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("An error occurred: $e"),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 
@@ -119,38 +135,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
                 ),
-                const SizedBox(height: 16),
-
-                CustomInputField(
-                  hint: "New Password",
-                  icon: Icons.lock_outline_rounded,
-                  controller: newPasswordController,
-                  isPassword: true,
-                  obscureText: !isPasswordVisible,
-                  onToggleObscure: () {
-                    setState(() {
-                      isPasswordVisible = !isPasswordVisible;
-                    });
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                CustomInputField(
-                  hint: "Confirm New Password",
-                  icon: Icons.lock_outline_rounded,
-                  controller: confirmPasswordController,
-                  isPassword: true,
-                  obscureText: !isConfirmVisible,
-                  onToggleObscure: () {
-                    setState(() {
-                      isConfirmVisible = !isConfirmVisible;
-                    });
-                  },
-                ),
                 const SizedBox(height: 35),
 
                 CustomButton(
-                  text: "Reset Password",
+                  text: "Send Reset Link",
                   onPressed: handleResetPassword,
                 ),
                 

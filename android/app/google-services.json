@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "642116540552",
+    "project_id": "career-ai-shahed",
+    "storage_bucket": "career-ai-shahed.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:642116540552:android:1b6a53e3762a18a63ae73d",
+        "android_client_info": {
+          "package_name": "com.example.career_ai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBPjSGbEnJtOtyO900xeavOCPxciquL_C8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

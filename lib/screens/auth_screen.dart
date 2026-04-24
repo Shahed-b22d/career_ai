@@ -144,7 +144,7 @@ class _AuthAndRoleSelectionWidgetState
                 const SizedBox(height: 8),
 
                 Text(
-                  "Welcome back 👋",
+                  "Welcome back",
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 35),

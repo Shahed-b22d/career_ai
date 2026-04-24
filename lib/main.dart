@@ -10,8 +10,23 @@ import 'screens/person_profile.dart';
 import 'screens/company_profile.dart';
 import 'screens/main_screen.dart';
 import 'theme/app_theme.dart';
+import 'services/notification_service.dart';
 
-void main() {
+import 'package:firebase_core/firebase_core.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // تفعيل خدمة الإشعارات
+  await NotificationService().init();
+  await NotificationService().requestPermission();
+  
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint("Firebase init failed (Please configure Firebase later): $e");
+  }
+
   runApp(const MyApp());
 }
 
