@@ -13,7 +13,7 @@ import 'theme/app_theme.dart';
 import 'services/notification_service.dart';
 
 import 'package:firebase_core/firebase_core.dart';
-
+import 'package:google_sign_in/google_sign_in.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -23,6 +23,11 @@ void main() async {
   
   try {
     await Firebase.initializeApp();
+    
+    // إعداد مكتبة جوجل الجديدة (v7) بالمعرف الخاص بالويب
+    await GoogleSignIn.instance.initialize(
+      serverClientId: '642116540552-4f8v4824t9m73v3chfs2s17bed1nnf35.apps.googleusercontent.com',
+    );
   } catch (e) {
     debugPrint("Firebase init failed (Please configure Firebase later): $e");
   }

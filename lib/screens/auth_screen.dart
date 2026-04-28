@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_input_field.dart';
@@ -24,6 +26,61 @@ class _AuthAndRoleSelectionWidgetState
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> signInWithGoogle() async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      GoogleSignInAccount? googleUser;
+      try {
+        googleUser = await GoogleSignIn.instance.authenticate();
+      } catch (e) {
+        if (mounted) {
+          Navigator.pop(context); // User cancelled or error
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Error: ${e.toString()}"),
+              backgroundColor: Colors.redAccent,
+              duration: const Duration(seconds: 10),
+            ),
+          );
+        }
+        return;
+      }
+      
+      if (googleUser == null) {
+        if (mounted) Navigator.pop(context);
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+      );
+
+      await FirebaseAuth.instance.signInWithCredential(credential);
+
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Google Sign-In failed: $e"),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+      debugPrint("Google Sign In Error: $e");
+    }
   }
 
   // 🔥 Logo 
@@ -266,47 +323,7 @@ class _AuthAndRoleSelectionWidgetState
 
                 OutlinedButton.icon(
                   onPressed: () async {
-                    try {
-                      // 🔹 تمت محاكاة تسجيل الدخول هنا لتخطي خطأ التحزيم (Compile Error)
-                      // لتعمل مكتبة google_sign_in بشكل حقيقي على الأندرويد، يجب ضبط ملفات Firebase (google-services.json)
-                      // وكذلك تعديل ملفات build.gradle، وإلا سيفشل التطبيق في الإقلاع.
-                      
-                      /* 
-                      final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
-                      final account = await googleSignIn.signIn(); 
-                      */
-                      
-                      // - - - - - - - محاكاة مؤقتة - - - - - - -
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (context) => const Center(child: CircularProgressIndicator()),
-                      );
-                      
-                      await Future.delayed(const Duration(seconds: 2)); // محاكاة وقت التحميل
-                      
-                      if (mounted) {
-                        Navigator.pop(context); // إغلاق شاشة التحميل
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Welcome, User! (Simulated)'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                        Navigator.pushReplacementNamed(context, '/home');
-                      }
-                      
-                    } catch (error) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Google Sign-In failed or cancelled."),
-                            backgroundColor: Colors.redAccent,
-                          ),
-                        );
-                      }
-                      print("Google Sign In Error: $error");
-                    }
+                    await signInWithGoogle();
                   },
                   icon: const Icon(Icons.g_mobiledata, size: 36, color: Colors.blue),
                   label: const Text(
