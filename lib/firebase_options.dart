@@ -63,6 +63,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '642116540552',
     projectId: 'career-ai-shahed',
     storageBucket: 'career-ai-shahed.firebasestorage.app',
+    androidClientId: '642116540552-pl2bgg01omfci67jg7brsr19em8h6os6.apps.googleusercontent.com',
+    iosClientId: '642116540552-9gifu55ufpfiiqo0nonqpekcjs1v0hlr.apps.googleusercontent.com',
     iosBundleId: 'com.example.careerAi',
   );
 
@@ -72,6 +74,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '642116540552',
     projectId: 'career-ai-shahed',
     storageBucket: 'career-ai-shahed.firebasestorage.app',
+    androidClientId: '642116540552-pl2bgg01omfci67jg7brsr19em8h6os6.apps.googleusercontent.com',
+    iosClientId: '642116540552-9gifu55ufpfiiqo0nonqpekcjs1v0hlr.apps.googleusercontent.com',
     iosBundleId: 'com.example.careerAi',
   );
 
@@ -83,4 +87,5 @@ class DefaultFirebaseOptions {
     authDomain: 'career-ai-shahed.firebaseapp.com',
     storageBucket: 'career-ai-shahed.firebasestorage.app',
   );
+
 }
