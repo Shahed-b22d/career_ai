@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_input_field.dart';
@@ -33,6 +35,52 @@ class _SignUpScreenState extends State<SignUpScreen> {
     confirmPasswordController.dispose();
     businessTypeController.dispose();
     super.dispose();
+  }
+
+  Future<void> signInWithGoogle() async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      GoogleSignInAccount? googleUser;
+      try {
+        googleUser = await GoogleSignIn.instance.authenticate();
+      } catch (e) {
+        if (mounted) Navigator.pop(context); // User cancelled or error
+        return;
+      }
+      
+      if (googleUser == null) {
+        if (mounted) Navigator.pop(context);
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+      );
+
+      await FirebaseAuth.instance.signInWithCredential(credential);
+
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        Navigator.pushReplacementNamed(context, '/home'); // تجاوز الإعدادات حالياً
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Google Sign-In failed: $e"),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+      debugPrint("Google Sign In Error: $e");
+    }
   }
 
   Widget buildRoleCard({
@@ -281,6 +329,41 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     },
                   );
                 },
+              ),
+              const SizedBox(height: 30),
+
+              Row(
+                children: [
+                  Expanded(child: Divider(color: Colors.grey.shade300)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      "OR",
+                      style: TextStyle(color: AppTheme.textSecondaryColor, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Expanded(child: Divider(color: Colors.grey.shade300)),
+                ],
+              ),
+              const SizedBox(height: 25),
+
+              OutlinedButton.icon(
+                onPressed: () async {
+                  await signInWithGoogle();
+                },
+                icon: Image.asset('assets/icons/google.png', width: 24, height: 24),
+                label: const Text(
+                  "Continue with Google",
+                  style: TextStyle(fontSize: 16, color: AppTheme.textPrimaryColor),
+                ),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 55),
+                  backgroundColor: Colors.white,
+                  side: BorderSide(color: Colors.grey.shade300),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
               ),
               const SizedBox(height: 40),
             ],
