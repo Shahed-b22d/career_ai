@@ -325,7 +325,7 @@ class _AuthAndRoleSelectionWidgetState
                   onPressed: () async {
                     await signInWithGoogle();
                   },
-                  icon: const Icon(Icons.g_mobiledata, size: 36, color: Colors.blue),
+                  icon: Image.asset('assets/icons/google.png', width: 24, height: 24),
                   label: const Text(
                     "Continue with Google",
                     style: TextStyle(fontSize: 16, color: AppTheme.textPrimaryColor),
