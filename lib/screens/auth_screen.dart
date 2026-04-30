@@ -67,7 +67,11 @@ class _AuthAndRoleSelectionWidgetState
 
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
-        Navigator.pushReplacementNamed(context, '/home');
+        if (selectedRole == 'company') {
+          Navigator.pushReplacementNamed(context, '/companyDashboard');
+        } else {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -281,7 +285,11 @@ class _AuthAndRoleSelectionWidgetState
                 CustomButton(
                   text: "Login",
                   onPressed: () {
-                    Navigator.pushReplacementNamed(context, '/home');
+                    if (selectedRole == 'company') {
+                      Navigator.pushReplacementNamed(context, '/companyDashboard');
+                    } else {
+                      Navigator.pushReplacementNamed(context, '/home');
+                    }
                   },
                 ),
                 const SizedBox(height: 16),

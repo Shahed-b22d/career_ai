@@ -67,7 +67,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
-        Navigator.pushReplacementNamed(context, '/home'); // تجاوز الإعدادات حالياً
+        if (selectedRole == 'company') {
+          Navigator.pushReplacementNamed(context, '/companyDashboard');
+        } else {
+          Navigator.pushReplacementNamed(context, '/home'); // تجاوز الإعدادات حالياً
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -320,7 +324,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                   Navigator.pushReplacementNamed(
                     context,
-                    selectedRole == "job" ? '/personProfile' : '/companyProfile',
+                    selectedRole == "job" ? '/personProfile' : '/companyDashboard',
                     arguments: {
                       "name": fullNameController.text,
                       "email": emailController.text,
