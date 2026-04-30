@@ -95,15 +95,6 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.pushNamed(context, '/postJob');
-        },
-        icon: const Icon(Icons.add_rounded),
-        label: const Text("Post Job"),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
-      ),
       body: FadeTransition(
         opacity: fade,
         child: SlideTransition(
@@ -130,6 +121,13 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
                 ),
                 child: Column(
                   children: [
+                    Align(
+                      alignment: Alignment.topLeft,
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ),
                     Stack(
                       children: [
                         Container(

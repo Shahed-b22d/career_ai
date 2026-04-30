@@ -24,6 +24,7 @@ dependencies:
   firebase_auth: ^5.3.3
   flutter_local_notifications: ^17.1.2
   android_intent_plus: ^5.0.2
+  fl_chart: ^1.2.0
 
 dev_dependencies:
   flutter_test:

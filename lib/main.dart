@@ -9,6 +9,7 @@ import 'screens/post_job_screen.dart';
 import 'screens/person_profile.dart';
 import 'screens/company_profile.dart';
 import 'screens/main_screen.dart';
+import 'screens/company_dashboard.dart';
 import 'theme/app_theme.dart';
 import 'services/notification_service.dart';
 
@@ -57,6 +58,7 @@ class MyApp extends StatelessWidget {
         '/personProfile': (context) => const PersonProfile(),
         '/companyProfile': (context) => const CompanyProfileScreen(),
         '/home': (context) => const MainScreen(),
+        '/companyDashboard': (context) => const CompanyDashboard(),
         '/uploadCV': (context) => const UploadScreen(),
 
         // 🔹 واجهة Roadmap مرتبطة بـ Upload CV
