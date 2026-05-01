@@ -24,11 +24,11 @@ class CompanyDashboard extends StatelessWidget {
               const SizedBox(height: 32),
               _buildActiveJobPostingsHeader(context),
               const SizedBox(height: 16),
-              _buildRecentJobRow("Senior Flutter Developer", "Posted 2 days ago", "12 Applicants"),
+              _buildRecentJobRow(context, "Senior Flutter Developer", "Posted 2 days ago", "12 AI Matches"),
               const SizedBox(height: 12),
-              _buildRecentJobRow("Laravel Backend Dev", "Posted 5 days ago", "34 Applicants"),
+              _buildRecentJobRow(context, "Laravel Backend Dev", "Posted 5 days ago", "34 AI Matches"),
               const SizedBox(height: 12),
-              _buildRecentJobRow("Product Manager", "Posted 1 week ago", "8 Applicants"),
+              _buildRecentJobRow(context, "Product Manager", "Posted 1 week ago", "8 AI Matches"),
               const SizedBox(height: 40),
             ],
           ),
@@ -78,7 +78,9 @@ class CompanyDashboard extends StatelessWidget {
           children: [
             IconButton(
               icon: const Icon(Icons.notifications_outlined, color: Colors.black87),
-              onPressed: () {},
+              onPressed: () {
+                Navigator.pushNamed(context, '/notifications');
+              },
             ),
             GestureDetector(
               onTap: () {
@@ -97,7 +99,11 @@ class CompanyDashboard extends StatelessWidget {
   }
 
   Widget _buildAiInsightBanner(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, '/aiInsights');
+      },
+      child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -152,6 +158,7 @@ class CompanyDashboard extends StatelessWidget {
           const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
         ],
       ),
+      ),
     );
   }
 
@@ -162,13 +169,13 @@ class CompanyDashboard extends StatelessWidget {
           children: [
             _buildStatCard("Active Jobs", "12", Icons.work_outline, Colors.blue),
             const SizedBox(width: 16),
-            _buildStatCard("Applicants", "84", Icons.people_outline, Colors.orange),
+            _buildStatCard("Suggested Profiles", "84", Icons.people_outline, Colors.orange),
           ],
         ),
         const SizedBox(height: 16),
         Row(
           children: [
-            _buildStatCard("AI Matches", "15", Icons.auto_awesome, Colors.purple),
+            _buildStatCard("Top Matches (>90%)", "15", Icons.auto_awesome, Colors.purple),
             const SizedBox(width: 16),
             _buildStatCard("Stripe Spend", "\$420", Icons.payments_outlined, Colors.green),
           ],
@@ -223,26 +230,13 @@ class CompanyDashboard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              "Top AI Candidates",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            Text(
-              "View All",
-              style: TextStyle(
-                color: AppTheme.primaryColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-          ],
+        const Text(
+          "Top AI Candidates",
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
         ),
         const SizedBox(height: 16),
         SizedBox(
@@ -252,9 +246,9 @@ class CompanyDashboard extends StatelessWidget {
             clipBehavior: Clip.none,
             scrollDirection: Axis.horizontal,
             children: [
-              _buildCandidateCard("Sarah Jenkins", "Senior Flutter Dev", "98%"),
-              _buildCandidateCard("Ahmed Ali", "Backend Engineer", "94%"),
-              _buildCandidateCard("Emily Chen", "UI/UX Designer", "91%"),
+              _buildCandidateCard(context, "Sarah Jenkins", "Senior Flutter Dev", "98%"),
+              _buildCandidateCard(context, "Ahmed Ali", "Backend Engineer", "94%"),
+              _buildCandidateCard(context, "Emily Chen", "UI/UX Designer", "91%"),
             ],
           ),
         ),
@@ -262,10 +256,22 @@ class CompanyDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildCandidateCard(String name, String role, String match) {
-    return Container(
-      width: 140,
-      margin: const EdgeInsets.only(right: 16, bottom: 8),
+  Widget _buildCandidateCard(BuildContext context, String name, String role, String match) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(
+          context,
+          '/candidateProfile',
+          arguments: {
+            'name': name,
+            'role': role,
+            'match': match,
+          },
+        );
+      },
+      child: Container(
+        width: 140,
+        margin: const EdgeInsets.only(right: 16, bottom: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -325,6 +331,7 @@ class CompanyDashboard extends StatelessWidget {
           )
         ],
       ),
+      ),
     );
   }
 
@@ -360,9 +367,21 @@ class CompanyDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentJobRow(String title, String subtitle, String badge) {
-    return Container(
-      padding: const EdgeInsets.all(16),
+  Widget _buildRecentJobRow(BuildContext context, String title, String subtitle, String badge) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(
+          context,
+          '/jobDetails',
+          arguments: {
+            'title': title,
+            'subtitle': subtitle,
+            'matches': badge,
+          },
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -417,6 +436,7 @@ class CompanyDashboard extends StatelessWidget {
             ),
           )
         ],
+      ),
       ),
     );
   }
