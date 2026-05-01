@@ -10,6 +10,10 @@ import 'screens/person_profile.dart';
 import 'screens/company_profile.dart';
 import 'screens/main_screen.dart';
 import 'screens/company_dashboard.dart';
+import 'screens/notifications_screen.dart';
+import 'screens/ai_insights_screen.dart';
+import 'screens/candidate_profile_screen.dart';
+import 'screens/job_details_screen.dart';
 import 'theme/app_theme.dart';
 import 'services/notification_service.dart';
 import 'screens/user_dashboard.dart';
@@ -60,6 +64,10 @@ class MyApp extends StatelessWidget {
         '/companyProfile': (context) => const CompanyProfileScreen(),
         '/companyDashboard': (context) => const CompanyDashboard(),
         '/uploadCV': (context) => const UploadScreen(),
+        '/notifications': (context) => const NotificationsScreen(),
+        '/aiInsights': (context) => const AiInsightsScreen(),
+        '/candidateProfile': (context) => const CandidateProfileScreen(),
+        '/jobDetails': (context) => const JobDetailsScreen(),
         '/userDashboard': (context) =>  UserDashboard(),
         // 🔹 واجهة Roadmap مرتبطة ب ـ Upload CV
         '/roadmap': (context) => RoadmapScreen(),
