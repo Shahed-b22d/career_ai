@@ -12,19 +12,19 @@ import 'screens/main_screen.dart';
 import 'screens/company_dashboard.dart';
 import 'theme/app_theme.dart';
 import 'services/notification_service.dart';
-
+import 'screens/user_dashboard.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+ 
   // تفعيل خدمة الإشعارات
   await NotificationService().init();
   await NotificationService().requestPermission();
-  
+ 
   try {
     await Firebase.initializeApp();
-    
+   
     // إعداد مكتبة جوجل الجديدة (v7) بالمعرف الخاص بالويب
     await GoogleSignIn.instance.initialize(
       serverClientId: '642116540552-4f8v4824t9m73v3chfs2s17bed1nnf35.apps.googleusercontent.com',
@@ -53,15 +53,15 @@ class MyApp extends StatelessWidget {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const AuthAndRoleSelectionWidget(),
         '/signup': (context) => const SignUpScreen(),
+        '/home': (context) => MainScreen(),
         '/forgotPassword': (context) => const ForgotPasswordScreen(),
         '/postJob': (context) => const PostJobScreen(),
         '/personProfile': (context) => const PersonProfile(),
         '/companyProfile': (context) => const CompanyProfileScreen(),
-        '/home': (context) => const MainScreen(),
         '/companyDashboard': (context) => const CompanyDashboard(),
         '/uploadCV': (context) => const UploadScreen(),
-
-        // 🔹 واجهة Roadmap مرتبطة بـ Upload CV
+        '/userDashboard': (context) =>  UserDashboard(),
+        // 🔹 واجهة Roadmap مرتبطة ب ـ Upload CV
         '/roadmap': (context) => RoadmapScreen(),
       },
 

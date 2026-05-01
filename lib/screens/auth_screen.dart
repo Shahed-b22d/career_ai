@@ -52,7 +52,7 @@ class _AuthAndRoleSelectionWidgetState
         }
         return;
       }
-      
+     
       if (googleUser == null) {
         if (mounted) Navigator.pop(context);
         return;
@@ -87,7 +87,7 @@ class _AuthAndRoleSelectionWidgetState
     }
   }
 
-  // 🔥 Logo 
+  // 🔥 Logo
   Widget appLogo() {
     return Container(
       width: 85,
@@ -281,14 +281,14 @@ class _AuthAndRoleSelectionWidgetState
                 ),
                 const SizedBox(height: 16),
 
-                // 🔥 Login Button 
+                // 🔥 Login Button
                 CustomButton(
                   text: "Login",
                   onPressed: () {
                     if (selectedRole == 'company') {
                       Navigator.pushReplacementNamed(context, '/companyDashboard');
                     } else {
-                      Navigator.pushReplacementNamed(context, '/home');
+                      Navigator.pushReplacementNamed(context, '/userDashboard');
                     }
                   },
                 ),
