@@ -42,6 +42,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
 
     try {
+      // الكود الحقيقي لفايربيس لإرسال إيميل فعلي:
       await FirebaseAuth.instance.sendPasswordResetEmail(
         email: emailController.text.trim(),
       );
