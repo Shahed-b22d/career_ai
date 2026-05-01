@@ -14,16 +14,17 @@ class CompanyProfileScreen extends StatefulWidget {
 
 class _CompanyProfileScreenState extends State<CompanyProfileScreen>
     with SingleTickerProviderStateMixin {
-  final companyNameController = TextEditingController();
+
+  final _formKey = GlobalKey<FormState>();
+
+  final nameController = TextEditingController();
   final emailController = TextEditingController();
   final phoneController = TextEditingController();
   final descriptionController = TextEditingController();
 
-  String workType = "IT"; // ✅ نوع العمل
+  String workType = "IT";
 
-  final _formKey = GlobalKey<FormState>();
-
-  File? image;
+  File? _image;
 
   late AnimationController _controller;
   late Animation<double> fade;
@@ -45,21 +46,12 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
     ).animate(_controller);
 
     _controller.forward();
-    
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final data = ModalRoute.of(context)!.settings.arguments as Map?;
-      if (data != null) {
-        companyNameController.text = data["name"] ?? "";
-        emailController.text = data["email"] ?? "";
-        phoneController.text = data["phone"] ?? "";
-      }
-    });
   }
 
   @override
   void dispose() {
     _controller.dispose();
-    companyNameController.dispose();
+    nameController.dispose();
     emailController.dispose();
     phoneController.dispose();
     descriptionController.dispose();
@@ -71,37 +63,28 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
 
     if (picked != null) {
       setState(() {
-        image = File(picked.path);
+        _image = File(picked.path);
       });
     }
   }
 
-  String? validateEmail(String? v) {
-    if (v == null || v.isEmpty) return "Required";
-    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w]{2,4}$').hasMatch(v)) {
-      return "Invalid email";
-    }
-    return null;
-  }
-
-  String? validatePhone(String? v) {
-    if (v == null || v.isEmpty) return "Required";
-    if (!RegExp(r'^[0-9]{10}$').hasMatch(v)) {
-      return "10 digits required";
-    }
-    return null;
+  void logout() {
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+
       body: FadeTransition(
         opacity: fade,
         child: SlideTransition(
           position: slide,
           child: Column(
             children: [
-              // 🔥 HEADER المحسن
+
+              /// 🔥 HEADER (نفس اليوزر)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.only(top: 60, bottom: 40),
@@ -119,15 +102,62 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
                     ),
                   ],
                 ),
+
                 child: Column(
                   children: [
-                    Align(
-                      alignment: Alignment.topLeft,
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
+
+                    /// 🔥 Top Row (Back + Menu)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+
+                          /// ⬅️ Back
+                          IconButton(
+                            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+
+                          /// ⋮ Menu
+                          PopupMenuButton(
+                            icon: const Icon(Icons.more_vert, color: Colors.white),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            itemBuilder: (context) => [
+                              const PopupMenuItem(
+                                value: "edit",
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.edit, color: Colors.blue),
+                                    SizedBox(width: 10),
+                                    Text("Edit Profile"),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: "logout",
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.logout, color: Colors.red),
+                                    SizedBox(width: 10),
+                                    Text("Logout"),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            onSelected: (value) {
+                              if (value == "logout") logout();
+                            },
+                          ),
+                        ],
                       ),
                     ),
+
+                    const SizedBox(height: 10),
+
+                    /// 🖼️ Avatar
                     Stack(
                       children: [
                         Container(
@@ -139,9 +169,9 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
                           child: CircleAvatar(
                             radius: 50,
                             backgroundColor: AppTheme.backgroundColor,
-                            backgroundImage: image != null ? FileImage(image!) : null,
-                            child: image == null
-                                ? const Icon(Icons.business_rounded, size: 50, color: AppTheme.textSecondaryColor)
+                            backgroundImage: _image != null ? FileImage(_image!) : null,
+                            child: _image == null
+                                ? const Icon(Icons.business, size: 50, color: AppTheme.textSecondaryColor)
                                 : null,
                           ),
                         ),
@@ -158,7 +188,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
                               ),
                               padding: const EdgeInsets.all(8),
                               child: const Icon(
-                                Icons.camera_alt_rounded,
+                                Icons.camera_alt,
                                 color: Colors.white,
                                 size: 20,
                               ),
@@ -167,7 +197,9 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
                         ),
                       ],
                     ),
+
                     const SizedBox(height: 16),
+
                     Text(
                       "Company Profile",
                       style: Theme.of(context).textTheme.displayMedium?.copyWith(
@@ -181,7 +213,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
 
               const SizedBox(height: 20),
 
-              // 🔥 FORM
+              /// 🔥 FORM
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -190,37 +222,34 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
                     child: SingleChildScrollView(
                       child: Column(
                         children: [
-                          const SizedBox(height: 10),
+
                           CustomInputField(
                             hint: "Company Name",
                             icon: Icons.business_outlined,
-                            controller: companyNameController,
-                            validator: (v) => v == null || v.isEmpty ? "Required" : null,
+                            controller: nameController,
                           ),
+
                           const SizedBox(height: 16),
 
                           CustomInputField(
                             hint: "Email",
                             icon: Icons.email_outlined,
                             controller: emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            validator: validateEmail,
                           ),
+
                           const SizedBox(height: 16),
 
                           CustomInputField(
                             hint: "Phone",
                             icon: Icons.phone_outlined,
                             controller: phoneController,
-                            keyboardType: TextInputType.number,
-                            validator: validatePhone,
                           ),
+
                           const SizedBox(height: 16),
 
-                          // ✅ نوع العمل
+                          /// 🔥 Dropdown أنيق
                           DropdownButtonFormField<String>(
                             value: workType,
-                            dropdownColor: AppTheme.cardColor,
                             decoration: InputDecoration(
                               hintText: "Work Type",
                               prefixIcon: const Icon(Icons.work_outline, color: AppTheme.primaryColor),
@@ -232,19 +261,18 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
                               ),
                             ),
                             items: ["IT", "Medical", "Engineering", "Other"]
-                                .map(
-                                  (e) => DropdownMenuItem(value: e, child: Text(e)),
-                                )
+                                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                                 .toList(),
                             onChanged: (v) {
                               setState(() {
-                                if (v != null) workType = v;
+                                workType = v!;
                               });
                             },
                           ),
+
                           const SizedBox(height: 16),
 
-                          TextFormField(
+                          TextField(
                             controller: descriptionController,
                             maxLines: 3,
                             decoration: InputDecoration(
@@ -257,22 +285,22 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
                                 borderSide: BorderSide.none,
                               ),
                             ),
-                            validator: (v) => v == null || v.isEmpty ? "Required" : null,
                           ),
+
                           const SizedBox(height: 40),
 
                           CustomButton(
                             text: "Save Changes",
                             onPressed: () {
-                              if (!_formKey.currentState!.validate()) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text("Profile updated successfully ✅"),
+                                  content: Text("Updated Successfully ✅"),
                                   backgroundColor: Colors.green,
                                 ),
                               );
                             },
                           ),
+
                           const SizedBox(height: 100),
                         ],
                       ),

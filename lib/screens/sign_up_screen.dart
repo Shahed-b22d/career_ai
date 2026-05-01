@@ -70,7 +70,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         if (selectedRole == 'company') {
           Navigator.pushReplacementNamed(context, '/companyDashboard');
         } else {
-          Navigator.pushReplacementNamed(context, '/home'); // تجاوز الإعدادات حالياً
+          Navigator.pushReplacementNamed(context, '/userDashboard'); // تجاوز الإعدادات حالياً
         }
       }
     } catch (e) {

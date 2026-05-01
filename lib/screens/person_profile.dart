@@ -32,25 +32,16 @@ class _PersonProfileState extends State<PersonProfile>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 500),
     );
 
     fade = Tween(begin: 0.0, end: 1.0).animate(_controller);
     slide = Tween(
-      begin: const Offset(0, 0.2),
+      begin: const Offset(0, 0.1),
       end: Offset.zero,
     ).animate(_controller);
 
     _controller.forward();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final data = ModalRoute.of(context)!.settings.arguments as Map?;
-      if (data != null) {
-        nameController.text = data["name"] ?? "";
-        emailController.text = data["email"] ?? "";
-        phoneController.text = data["phone"] ?? "";
-      }
-    });
   }
 
   @override
@@ -90,71 +81,67 @@ class _PersonProfileState extends State<PersonProfile>
           position: slide,
           child: Column(
             children: [
-              // 🔥 HEADER المحسن
+
+              // 🔥 HEADER
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.only(top: 60, bottom: 40),
+                padding: const EdgeInsets.only(top: 60, bottom: 30),
                 decoration: BoxDecoration(
                   gradient: AppTheme.primaryGradient,
                   borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(40),
-                    bottomRight: Radius.circular(40),
+                    bottomLeft: Radius.circular(35),
+                    bottomRight: Radius.circular(35),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryColor.withOpacity(0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
                 ),
                 child: Column(
                   children: [
+
                     Stack(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Colors.white,
                           child: CircleAvatar(
-                            radius: 50,
-                            backgroundColor: AppTheme.backgroundColor,
-                            backgroundImage: _image != null ? FileImage(_image!) : null,
+                            radius: 46,
+                            backgroundImage:
+                                _image != null ? FileImage(_image!) : null,
                             child: _image == null
-                                ? const Icon(Icons.person, size: 50, color: AppTheme.textSecondaryColor)
+                                ? const Icon(Icons.person, size: 40)
                                 : null,
                           ),
                         ),
+
                         Positioned(
                           bottom: 0,
                           right: 0,
                           child: GestureDetector(
                             onTap: pickImage,
                             child: Container(
+                              padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
                                 color: AppTheme.secondaryColor,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 3),
+                                border: Border.all(color: Colors.white, width: 2),
                               ),
-                              padding: const EdgeInsets.all(8),
                               child: const Icon(
-                                Icons.camera_alt_rounded,
+                                Icons.camera_alt,
+                                size: 18,
                                 color: Colors.white,
-                                size: 20,
                               ),
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    Text(
+
+                    const SizedBox(height: 12),
+
+                    const Text(
                       "Edit Profile",
-                      style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 24,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
@@ -172,50 +159,109 @@ class _PersonProfileState extends State<PersonProfile>
                     child: SingleChildScrollView(
                       child: Column(
                         children: [
-                          const SizedBox(height: 10),
+
                           CustomInputField(
                             hint: "Full Name",
-                            icon: Icons.person_outline_rounded,
+                            icon: Icons.person_outline,
                             controller: nameController,
                             validator: (v) {
-                              if (v == null || v.isEmpty) return "Name required";
-                              if (v.length < 3) return "Name too short";
+                              if (v == null || v.isEmpty) return "Required";
                               return null;
                             },
                           ),
+
                           const SizedBox(height: 16),
 
                           CustomInputField(
                             hint: "Email",
                             icon: Icons.email_outlined,
                             controller: emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            validator: (v) => !isValidEmail(v!) ? "Invalid email" : null,
+                            validator: (v) =>
+                                !isValidEmail(v!) ? "Invalid email" : null,
                           ),
+
                           const SizedBox(height: 16),
 
                           CustomInputField(
                             hint: "Phone",
                             icon: Icons.phone_outlined,
                             controller: phoneController,
-                            keyboardType: TextInputType.number,
-                            validator: (v) => !isValidPhone(v!) ? "10 digits required" : null,
+                            validator: (v) =>
+                                !isValidPhone(v!) ? "Invalid phone" : null,
                           ),
-                          const SizedBox(height: 40),
 
+                          const SizedBox(height: 30),
+
+                          // 🔥 SAVE
                           CustomButton(
                             text: "Save Changes",
                             onPressed: () {
                               if (!_formKey.currentState!.validate()) return;
+
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text("Profile updated successfully ✅"),
+                                  content: Text("Saved successfully ✅"),
                                   backgroundColor: Colors.green,
                                 ),
                               );
                             },
                           ),
-                          const SizedBox(height: 100), // padding for bottom nav
+
+                          const SizedBox(height: 16),
+
+                          // 🔥 LOGOUT
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  title: const Text("Logout"),
+                                  content: const Text(
+                                      "Are you sure you want to logout?"),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context),
+                                      child: const Text("Cancel"),
+                                    ),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                      ),
+                                      onPressed: () {
+                                        Navigator.pop(context);
+
+                                        Navigator.pushNamedAndRemoveUntil(
+                                          context,
+                                          '/login',
+                                          (route) => false,
+                                        );
+                                      },
+                                      child: const Text("Logout"),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.logout, color: Colors.red),
+                            label: const Text(
+                              "Logout",
+                              style: TextStyle(color: Colors.red),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize:
+                                  const Size(double.infinity, 55),
+                              side: const BorderSide(color: Colors.red),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 80),
                         ],
                       ),
                     ),

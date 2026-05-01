@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_input_field.dart';
@@ -27,10 +28,6 @@ class _UploadScreenState extends State<UploadScreen> {
   final experience = TextEditingController();
   final education = TextEditingController();
 
-  // 🔐 API KEY من run
-  final String apiKey = const String.fromEnvironment('OPENAI_API_KEY');
-
-  // 📥 رفع PDF
   Future pickPDF() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -44,163 +41,40 @@ class _UploadScreenState extends State<UploadScreen> {
     }
   }
 
-  // 🤖 تحسين AI
-  Future improveWithAI() async {
-    final url = Uri.parse("https://api.openai.com/v1/chat/completions");
-
-    final response = await http.post(
-      url,
-      headers: {
-        "Authorization": "Bearer $apiKey",
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode({
-        "model": "gpt-4o-mini",
-        "messages": [
-          {
-            "role": "system",
-            "content": "You are a professional ATS CV writer.",
-          },
-          {
-            "role": "user",
-            "content":
-                """
-Improve this CV and return JSON only:
-
-{
-"summary": "...",
-"skills": "...",
-"experience": "...",
-"education": "..."
-}
-
-Summary: ${summary.text}
-Skills: ${skills.text}
-Experience: ${experience.text}
-Education: ${education.text}
-""",
-          },
-        ],
-      }),
-    );
-
-    print(response.body);
-
-    if (response.statusCode != 200) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("API Error ❌")));
-      }
-      return;
-    }
-
-    final data = jsonDecode(response.body);
-    final aiText = data["choices"][0]["message"]["content"];
-    final jsonData = jsonDecode(aiText);
-
-    setState(() {
-      summary.text = jsonData["summary"];
-      skills.text = jsonData["skills"];
-      experience.text = jsonData["experience"];
-      education.text = jsonData["education"];
-    });
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Improved Successfully ✅")));
-    }
-  }
-
-  // 📄 PDF
   Future generatePDF() async {
     final pdf = pw.Document();
 
     pdf.addPage(
       pw.Page(
-        build: (context) => pw.Padding(
-          padding: const pw.EdgeInsets.all(20),
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(
-                name.text,
-                style: pw.TextStyle(
-                  fontSize: 24,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
-              pw.Text("${email.text} | ${phone.text}"),
-              pw.Divider(),
-
-              pw.Text(
-                "SUMMARY",
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-              ),
-              pw.Text(summary.text),
-
-              pw.SizedBox(height: 10),
-              pw.Text(
-                "SKILLS",
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-              ),
-              pw.Text(skills.text),
-
-              pw.SizedBox(height: 10),
-              pw.Text(
-                "EXPERIENCE",
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-              ),
-              pw.Text(experience.text),
-
-              pw.SizedBox(height: 10),
-              pw.Text(
-                "EDUCATION",
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-              ),
-              pw.Text(education.text),
-            ],
-          ),
+        build: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text(name.text, style: pw.TextStyle(fontSize: 24)),
+            pw.Text("${email.text} | ${phone.text}"),
+            pw.Divider(),
+            pw.Text(summary.text),
+          ],
         ),
       ),
     );
 
-    showModalBottomSheet(
-      context: context,
-      builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("Your CV is ready 🎉", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () async {
-                  await Printing.layoutPdf(
-                    onLayout: (format) async => pdf.save(),
-                  );
-                },
-                child: const Text("Download CV"),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                onPressed: () async {
-                  await improveWithAI();
-                  if (mounted) Navigator.pop(context);
-                },
-                child: const Text("✨ Improve with AI"),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+    await Printing.layoutPdf(onLayout: (format) async => pdf.save());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
+
       appBar: AppBar(
         title: const Text("Upload CV"),
+
+        // 🔥 سهم رجوع أبيض
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: AppTheme.primaryGradient,
@@ -212,130 +86,223 @@ Education: ${education.text}
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+
             GestureDetector(
               onTap: pickPDF,
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                padding: const EdgeInsets.all(30),
                 decoration: BoxDecoration(
                   color: AppTheme.cardColor,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: pickedFile != null ? Colors.green : AppTheme.primaryColor.withOpacity(0.5),
-                    width: 2,
-                    strokeAlign: BorderSide.strokeAlignOutside,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryColor.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
                 ),
                 child: Column(
                   children: [
                     Icon(
-                      pickedFile != null ? Icons.check_circle_rounded : Icons.file_upload_outlined,
-                      color: pickedFile != null ? Colors.green : AppTheme.primaryColor,
+                      Icons.cloud_upload,
                       size: 60,
+                      color: AppTheme.primaryColor,
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      pickedFile != null ? "File selected successfully" : "Upload your CV (PDF)",
-                      style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                        fontSize: 18,
-                        color: pickedFile != null ? Colors.green : AppTheme.textPrimaryColor,
-                      ),
-                    ),
-                    if (pickedFile == null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        "Tap to browse files",
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ]
+                    const SizedBox(height: 10),
+                    const Text("Upload CV"),
                   ],
                 ),
               ),
             ),
 
-            const SizedBox(height: 40),
+            const SizedBox(height: 20),
 
-            Row(
+            CustomInputField(hint: "Name", icon: Icons.person, controller: name),
+            const SizedBox(height: 10),
+
+            CustomInputField(hint: "Email", icon: Icons.email, controller: email),
+            const SizedBox(height: 10),
+
+            CustomInputField(hint: "Phone", icon: Icons.phone, controller: phone),
+            const SizedBox(height: 10),
+
+            _textArea("Summary", summary),
+            _textArea("Skills", skills),
+            _textArea("Experience", experience),
+            _textArea("Education", education),
+
+            const SizedBox(height: 20),
+
+            CustomButton(
+              text: "Generate CV",
+              onPressed: () async {
+
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (_) => const FancyLoader(),
+                );
+
+                await Future.delayed(const Duration(seconds: 6));
+
+                if (mounted) Navigator.pop(context);
+
+                generatePDF();
+              },
+            ),
+
+            const SizedBox(height: 80),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _textArea(String hint, TextEditingController controller) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: TextField(
+        controller: controller,
+        maxLines: 3,
+        decoration: InputDecoration(
+          hintText: hint,
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+//////////////////////////////////////////////////////////////////
+// 🔥🔥🔥 LOADER احترافي جداً
+//////////////////////////////////////////////////////////////////
+
+class FancyLoader extends StatefulWidget {
+  const FancyLoader({super.key});
+
+  @override
+  State<FancyLoader> createState() => _FancyLoaderState();
+}
+
+class _FancyLoaderState extends State<FancyLoader>
+    with SingleTickerProviderStateMixin {
+  late AnimationController controller;
+  double progress = 0;
+
+  final List<String> messages = [
+    "Preparing your CV...",
+    "Analyzing content...",
+    "Generating PDF...",
+    "Almost done..."
+  ];
+
+  int currentMessage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+
+    controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 6),
+    )..addListener(() {
+        setState(() {
+          progress = controller.value;
+
+          if (progress > 0.75) {
+            currentMessage = 3;
+          } else if (progress > 0.5) {
+            currentMessage = 2;
+          } else if (progress > 0.25) {
+            currentMessage = 1;
+          } else {
+            currentMessage = 0;
+          }
+        });
+      });
+
+    controller.forward();
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withOpacity(0.6), // 🔥 خلفية احترافية
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+
+            // 💎 دائرة Gradient
+            Stack(
+              alignment: Alignment.center,
               children: [
-                Expanded(child: Divider(color: Colors.grey.shade300)),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    "Or Create Manually",
-                    style: TextStyle(color: AppTheme.textSecondaryColor, fontWeight: FontWeight.bold),
+                SizedBox(
+                  width: 110,
+                  height: 110,
+                  child: ShaderMask(
+                    shaderCallback: (rect) {
+                      return const LinearGradient(
+                        colors: [
+                          Color(0xFF0052FF),
+                          Color(0xFF6B00FF),
+                        ],
+                      ).createShader(rect);
+                    },
+                    child: CircularProgressIndicator(
+                      value: progress,
+                      strokeWidth: 7,
+                      backgroundColor: Colors.white.withOpacity(0.1),
+                      valueColor:
+                          const AlwaysStoppedAnimation(Colors.white),
+                    ),
                   ),
                 ),
-                Expanded(child: Divider(color: Colors.grey.shade300)),
+
+                Text(
+                  "${(progress * 100).toInt()}%",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
               ],
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 25),
 
-            CustomInputField(hint: "Full Name", icon: Icons.person_outline, controller: name),
-            const SizedBox(height: 16),
-
-            CustomInputField(hint: "Email", icon: Icons.email_outlined, controller: email),
-            const SizedBox(height: 16),
-
-            CustomInputField(hint: "Phone", icon: Icons.phone_outlined, controller: phone),
-            const SizedBox(height: 16),
-
-            TextField(
-              controller: summary,
-              maxLines: 3,
-              decoration: const InputDecoration().copyWith(
-                hintText: "Professional Summary",
-                prefixIcon: const Icon(Icons.description_outlined, color: AppTheme.primaryColor),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            TextField(
-              controller: skills,
-              maxLines: 3,
-              decoration: const InputDecoration().copyWith(
-                hintText: "Skills (e.g. Management, Design...)",
-                prefixIcon: const Icon(Icons.star_outline_rounded, color: AppTheme.primaryColor),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            TextField(
-              controller: experience,
-              maxLines: 3,
-              decoration: const InputDecoration().copyWith(
-                hintText: "Experience",
-                prefixIcon: const Icon(Icons.work_outline_rounded, color: AppTheme.primaryColor),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            TextField(
-              controller: education,
-              maxLines: 3,
-              decoration: const InputDecoration().copyWith(
-                hintText: "Education",
-                prefixIcon: const Icon(Icons.school_outlined, color: AppTheme.primaryColor),
+            // ✨ نص متغير ناعم
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              child: Text(
+                messages[currentMessage],
+                key: ValueKey(currentMessage),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  decoration: TextDecoration.none, // ❌ بدون خط أصفر
+                ),
               ),
             ),
 
-            const SizedBox(height: 35),
+            const SizedBox(height: 8),
 
-            CustomButton(
-              text: "Generate CV PDF",
-              onPressed: generatePDF,
+            Text(
+              "This will only take a moment",
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.6),
+                fontSize: 12,
+                decoration: TextDecoration.none,
+              ),
             ),
-            
-            const SizedBox(height: 100), // padding for bottom nav space
           ],
         ),
       ),

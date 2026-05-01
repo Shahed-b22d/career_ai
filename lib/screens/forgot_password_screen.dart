@@ -14,7 +14,7 @@ class ForgotPasswordScreen extends StatefulWidget {
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final emailController = TextEditingController();
-  
+
   @override
   void dispose() {
     emailController.dispose();
@@ -24,62 +24,53 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   void handleResetPassword() async {
     if (emailController.text.isEmpty || !emailController.text.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter a valid email."), backgroundColor: Colors.redAccent),
+        const SnackBar(
+          content: Text("Please enter a valid email."),
+          backgroundColor: Colors.redAccent,
+        ),
       );
       return;
     }
 
-    // إظهار علامة التحميل
+    // 🔥 LOADER
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(),
+      ),
     );
 
     try {
-      // إرسال طلب استعادة كلمة المرور لفايربيس
       await FirebaseAuth.instance.sendPasswordResetEmail(
         email: emailController.text.trim(),
       );
 
       if (mounted) {
-        Navigator.pop(context); // إغلاق مربع التحميل
-        
-        // 🔹 عرض الإشعار المحلي (Push Notification) 🔹
+        Navigator.pop(context);
+
         NotificationService().showNotification(
-          id: 1, 
-          title: "CareerAI Password Reset", 
-          body: "A reset link has been sent to your email successfully. Please check your inbox.",
+          id: 1,
+          title: "CareerAI Password Reset",
+          body: "Reset link sent successfully. Check your email.",
           payload: 'open_mail',
         );
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Reset link sent! Check your email. ✅"),
+            content: Text("Reset link sent! ✅"),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 4),
           ),
         );
-        
-        // العودة لصفحة تسجيل الدخول
-        Navigator.pop(context); 
-      }
-    } on FirebaseAuthException catch (e) {
-      if (mounted) {
-        Navigator.pop(context); // إغلاق مربع التحميل
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message ?? "Failed to send reset link."),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context); // إغلاق مربع التحميل
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("An error occurred: $e"),
+            content: Text("Error: $e"),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -90,61 +81,92 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+
       appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+
+        // 🔥 سهم أبيض
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
+
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppTheme.primaryGradient,
+          ),
+        ),
+
         title: const Text("Reset Password"),
       ),
+
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+
+              /// 🔥 الدائرة بالنص (المشكلة محلولة)
+              Center(
+                child: Container(
+                  width: 90,
+                  height: 90,
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    gradient: AppTheme.primaryGradient,
                     shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryColor.withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
                   ),
-                  child: const Icon(Icons.lock_reset_rounded, size: 40, color: AppTheme.primaryColor),
-                ),
-                const SizedBox(height: 24),
-                
-                Text(
-                  "Create New Password",
-                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                    fontSize: 28,
+                  child: const Icon(
+                    Icons.lock_reset_rounded,
+                    size: 45,
+                    color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 8),
-                
-                Text(
-                  "Enter your email and a new password to reset your account access.",
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 35),
+              ),
 
-                CustomInputField(
-                  hint: "Email address",
-                  icon: Icons.email_outlined,
-                  controller: emailController,
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 35),
+              const SizedBox(height: 30),
 
-                CustomButton(
-                  text: "Send Reset Link",
-                  onPressed: handleResetPassword,
+              Text(
+                "Reset Your Password",
+                style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                  fontSize: 26,
                 ),
-                
-                const SizedBox(height: 50),
-              ],
-            ),
+              ),
+
+              const SizedBox(height: 10),
+
+              Text(
+                "Enter your email and we’ll send you a reset link.",
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+
+              const SizedBox(height: 40),
+
+              CustomInputField(
+                hint: "Email address",
+                icon: Icons.email_outlined,
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+              ),
+
+              const SizedBox(height: 40),
+
+              CustomButton(
+                text: "Send Reset Link",
+                onPressed: handleResetPassword,
+              ),
+
+              const SizedBox(height: 60),
+            ],
           ),
         ),
       ),
