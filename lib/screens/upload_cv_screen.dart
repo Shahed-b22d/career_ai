@@ -9,6 +9,7 @@ import 'package:printing/printing.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_input_field.dart';
+import 'cv_analysis_screen.dart';
 
 class UploadScreen extends StatefulWidget {
   const UploadScreen({super.key});
@@ -130,7 +131,7 @@ class _UploadScreenState extends State<UploadScreen> {
             const SizedBox(height: 20),
 
             CustomButton(
-              text: "Generate CV",
+              text: "Analyze CV",
               onPressed: () async {
 
                 showDialog(
@@ -143,7 +144,14 @@ class _UploadScreenState extends State<UploadScreen> {
 
                 if (mounted) Navigator.pop(context);
 
-                generatePDF();
+                if (mounted) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CvAnalysisScreen(),
+                    ),
+                  );
+                }
               },
             ),
 
@@ -190,10 +198,10 @@ class _FancyLoaderState extends State<FancyLoader>
   double progress = 0;
 
   final List<String> messages = [
-    "Preparing your CV...",
-    "Analyzing content...",
-    "Generating PDF...",
-    "Almost done..."
+    "Extracting Resume Data...",
+    "Analyzing Skills & Experience...",
+    "Matching with Job Market...",
+    "Generating AI Insights..."
   ];
 
   int currentMessage = 0;
@@ -239,39 +247,69 @@ class _FancyLoaderState extends State<FancyLoader>
           mainAxisSize: MainAxisSize.min,
           children: [
 
-            // 💎 دائرة Gradient
+            // 💎 دائرة Gradient مع أيقونة ذكاء اصطناعي في المنتصف
             Stack(
               alignment: Alignment.center,
               children: [
+                // خلفية دائرية خفيفة
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.secondaryColor.withOpacity(0.3),
+                        blurRadius: 30,
+                        spreadRadius: 5,
+                      ),
+                    ],
+                  ),
+                ),
+                // المؤشر الدائري المتدرج
                 SizedBox(
-                  width: 110,
-                  height: 110,
+                  width: 120,
+                  height: 120,
                   child: ShaderMask(
                     shaderCallback: (rect) {
-                      return const LinearGradient(
+                      return const SweepGradient(
                         colors: [
-                          Color(0xFF0052FF),
-                          Color(0xFF6B00FF),
+                          AppTheme.primaryColor,
+                          AppTheme.secondaryColor,
+                          AppTheme.primaryColor,
                         ],
+                        stops: [0.0, 0.5, 1.0],
                       ).createShader(rect);
                     },
                     child: CircularProgressIndicator(
                       value: progress,
-                      strokeWidth: 7,
-                      backgroundColor: Colors.white.withOpacity(0.1),
-                      valueColor:
-                          const AlwaysStoppedAnimation(Colors.white),
+                      strokeWidth: 8,
+                      backgroundColor: Colors.white.withOpacity(0.05),
+                      valueColor: const AlwaysStoppedAnimation(Colors.white),
                     ),
                   ),
                 ),
-
-                Text(
-                  "${(progress * 100).toInt()}%",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                  ),
+                // الأيقونة والنص في المنتصف
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.auto_awesome,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "${(progress * 100).toInt()}%",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
