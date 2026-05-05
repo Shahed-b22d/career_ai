@@ -163,64 +163,59 @@ class CompanyDashboard extends StatelessWidget {
   }
 
   Widget _buildStatsRow(BuildContext context) {
-    return Column(
+    return Row(
       children: [
-        Row(
-          children: [
-            _buildStatCard("Active Jobs", "12", Icons.work_outline, Colors.blue),
-            const SizedBox(width: 16),
-            _buildStatCard("Suggested Profiles", "84", Icons.people_outline, Colors.orange),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            _buildStatCard("Top Matches (>90%)", "15", Icons.auto_awesome, Colors.purple),
-            const SizedBox(width: 16),
-            _buildStatCard("Stripe Spend", "\$420", Icons.payments_outlined, Colors.green),
-          ],
-        ),
+        _buildStatCard(context, "Active Jobs", "12", Icons.work_outline, Colors.blue, '/activeJobs'),
+        const SizedBox(width: 16),
+        _buildStatCard(context, "Suggested Profiles", "84", Icons.people_outline, Colors.orange, '/suggestedProfiles'),
+        const SizedBox(width: 16),
+        _buildStatCard(context, "Stripe Spend", "\$420", Icons.payments_outlined, Colors.green, '/billing'),
       ],
     );
   }
 
-  Widget _buildStatCard(String title, String count, IconData icon, Color color) {
+  Widget _buildStatCard(BuildContext context, String title, String count, IconData icon, Color color, String route) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 12),
-            Text(
-              count,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+      child: GestureDetector(
+        onTap: () {
+          Navigator.pushNamed(context, route);
+        },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 11,
-                color: Colors.black54,
+            ],
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: color, size: 28),
+              const SizedBox(height: 12),
+              Text(
+                count,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 2),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Colors.black54,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
