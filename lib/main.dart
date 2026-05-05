@@ -14,6 +14,9 @@ import 'screens/notifications_screen.dart';
 import 'screens/ai_insights_screen.dart';
 import 'screens/candidate_profile_screen.dart';
 import 'screens/job_details_screen.dart';
+import 'screens/active_jobs_screen.dart';
+import 'screens/suggested_profiles_screen.dart';
+import 'screens/billing_screen.dart';
 import 'theme/app_theme.dart';
 import 'services/notification_service.dart';
 import 'screens/user_dashboard.dart';
@@ -68,6 +71,9 @@ class MyApp extends StatelessWidget {
         '/aiInsights': (context) => const AiInsightsScreen(),
         '/candidateProfile': (context) => const CandidateProfileScreen(),
         '/jobDetails': (context) => const JobDetailsScreen(),
+        '/activeJobs': (context) => const ActiveJobsScreen(),
+        '/suggestedProfiles': (context) => const SuggestedProfilesScreen(),
+        '/billing': (context) => const BillingScreen(),
         '/userDashboard': (context) =>  UserDashboard(),
         // 🔹 واجهة Roadmap مرتبطة ب ـ Upload CV
         '/roadmap': (context) => RoadmapScreen(),
