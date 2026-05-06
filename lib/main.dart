@@ -3,7 +3,6 @@ import 'screens/splash_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/sign_up_screen.dart';
 import 'screens/upload_cv_screen.dart';
-import 'screens/roadmap_screen.dart';
 import 'screens/forgot_password_screen.dart';
 import 'screens/post_job_screen.dart';
 import 'screens/person_profile.dart';
@@ -75,8 +74,6 @@ class MyApp extends StatelessWidget {
         '/suggestedProfiles': (context) => const SuggestedProfilesScreen(),
         '/billing': (context) => const BillingScreen(),
         '/userDashboard': (context) =>  UserDashboard(),
-        // 🔹 واجهة Roadmap مرتبطة ب ـ Upload CV
-        '/roadmap': (context) => RoadmapScreen(),
       },
 
       // 🔹 Theme (تطبيق الثيم الجديد)

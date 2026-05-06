@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_button.dart';
+import '../services/ai_api_service.dart';
 import 'roadmap_screen.dart';
 
 class CvAnalysisScreen extends StatefulWidget {
-  const CvAnalysisScreen({super.key});
+  final Map<String, dynamic>? analysisData;
+  final String targetJob;
+  final String userDataText;
+
+  const CvAnalysisScreen({super.key, this.analysisData, this.targetJob = "", this.userDataText = ""});
 
   @override
   State<CvAnalysisScreen> createState() => _CvAnalysisScreenState();
@@ -14,31 +19,37 @@ class _CvAnalysisScreenState extends State<CvAnalysisScreen> with SingleTickerPr
   late AnimationController _animationController;
   late Animation<double> _progressAnimation;
 
-  final List<String> acquiredSkills = [
-    "Flutter & Dart",
-    "UI/UX Design",
-    "RESTful APIs",
-    "Git & GitHub",
-    "Problem Solving",
-  ];
-
-  final List<String> missingSkills = [
-    "State Management (Riverpod/Bloc)",
-    "CI/CD Pipelines",
-    "Unit Testing",
-    "Firebase Integration",
-  ];
+  List<String> acquiredSkills = [];
+  List<String> missingSkills = [];
+  double matchScore = 0.0;
 
   @override
   void initState() {
     super.initState();
+
+    if (widget.analysisData != null && widget.analysisData!['data'] != null) {
+      final data = widget.analysisData!['data'];
+      
+      // Parse skills safely
+      if (data['current_skills'] != null) {
+        acquiredSkills = List<String>.from(data['current_skills']);
+      }
+      if (data['missing_skills'] != null) {
+        missingSkills = List<String>.from(data['missing_skills']);
+      }
+      
+      // Parse match score securely
+      if (data['match_percentage'] != null) {
+        matchScore = (data['match_percentage'] as num).toDouble() / 100;
+      }
+    }
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
     );
     
-    // Animate to 75%
-    _progressAnimation = Tween<double>(begin: 0, end: 0.75).animate(
+    // Animate to matchScore
+    _progressAnimation = Tween<double>(begin: 0, end: matchScore > 0 ? matchScore : 0.75).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
     );
 
@@ -175,8 +186,36 @@ class _CvAnalysisScreenState extends State<CvAnalysisScreen> with SingleTickerPr
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const RoadmapScreen()),
+                  MaterialPageRoute(builder: (context) => RoadmapScreen(
+                    targetJob: widget.targetJob,
+                    missingSkills: missingSkills,
+                  )),
                 );
+              },
+            ),
+            const SizedBox(height: 16),
+            CustomButton(
+              text: "Generate ATS CV",
+              onPressed: () async {
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (_) => const Center(child: CircularProgressIndicator()),
+                );
+                
+                final responsePath = await AiApiService.generateAtsCv(widget.userDataText, [...acquiredSkills, ...missingSkills]);
+                
+                if (mounted) Navigator.pop(context);
+                
+                if (responsePath != null && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('CV Saved to: $responsePath')),
+                  );
+                } else if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Failed to generate ATS CV.')),
+                  );
+                }
               },
             ),
             const SizedBox(height: 16),
