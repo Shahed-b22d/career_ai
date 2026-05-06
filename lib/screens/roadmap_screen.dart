@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_button.dart';
+import '../services/ai_api_service.dart';
 import 'quiz_screen.dart';
 
 class RoadmapScreen extends StatefulWidget {
-  const RoadmapScreen({super.key});
+  final String targetJob;
+  final List<String> missingSkills;
+
+  const RoadmapScreen({super.key, required this.targetJob, required this.missingSkills});
 
   @override
   State<RoadmapScreen> createState() => _RoadmapScreenState();
@@ -12,32 +16,37 @@ class RoadmapScreen extends StatefulWidget {
 
 class _RoadmapScreenState extends State<RoadmapScreen> {
   // Roadmap Data with Completion State
-  final List<Map<String, dynamic>> roadmapSteps = [
-    {
-      "title": "Learn State Management",
-      "description": "Study Riverpod or Bloc to organize app data flow effectively.",
-      "duration": "2 Weeks",
-      "isCompleted": false,
-    },
-    {
-      "title": "Master CI/CD Pipelines",
-      "description": "Use GitHub Actions and Fastlane to automate deployment processes.",
-      "duration": "1 Week",
-      "isCompleted": false,
-    },
-    {
-      "title": "Unit Testing & QA",
-      "description": "Learn how to write effective tests using the flutter_test library.",
-      "duration": "2 Weeks",
-      "isCompleted": false,
-    },
-    {
-      "title": "Firebase Integration",
-      "description": "Learn Authentication, Firestore databases, and Cloud Storage.",
-      "duration": "3 Weeks",
-      "isCompleted": false,
-    },
-  ];
+  List<Map<String, dynamic>> roadmapSteps = [];
+  bool isLoading = true;
+  String fullRoadmapText = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRoadmap();
+  }
+
+  Future<void> _fetchRoadmap() async {
+    final response = await AiApiService.generateRoadmap(widget.targetJob, widget.missingSkills);
+    if (response != null && response['data'] != null) {
+      final data = response['data'];
+      fullRoadmapText = data['roadmap'] ?? "";
+      
+      final courses = data['suggested_courses'] as List<dynamic>?;
+      if (courses != null) {
+        roadmapSteps = courses.map((c) => {
+          "title": c['skill'] ?? "Unknown Skill",
+          "description": c['title'] ?? "Recommended Course",
+          "url": c['url'] ?? "",
+          "duration": "Self-paced",
+          "isCompleted": false,
+        }).toList();
+      }
+    }
+    setState(() {
+      isLoading = false;
+    });
+  }
 
   double get _progressPercentage {
     if (roadmapSteps.isEmpty) return 0.0;
@@ -118,10 +127,10 @@ class _RoadmapScreenState extends State<RoadmapScreen> {
                   children: [
                     const Icon(Icons.link, color: Colors.blue),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        "Coursera: Advanced Flutter & Dart",
-                        style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
+                        step["url"] ?? "No URL provided",
+                        style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
                       ),
                     ),
                   ],
@@ -182,7 +191,7 @@ class _RoadmapScreenState extends State<RoadmapScreen> {
         ),
         foregroundColor: Colors.white,
       ),
-      body: Column(
+      body: isLoading ? const Center(child: CircularProgressIndicator()) : Column(
         children: [
           // Progress Header
           Container(

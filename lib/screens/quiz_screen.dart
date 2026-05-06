@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_button.dart';
+import '../services/ai_api_service.dart';
 
 class QuizScreen extends StatefulWidget {
   final String skillName;
@@ -15,24 +16,30 @@ class _QuizScreenState extends State<QuizScreen> {
   int currentQuestionIndex = 0;
   String? selectedOption;
   bool isCompleted = false;
+  bool isLoading = true;
 
-  final List<Map<String, dynamic>> questions = [
-    {
-      "question": "Which of the following best describes a key concept in this skill?",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "answer": "Option B"
-    },
-    {
-      "question": "What is the primary benefit of mastering this skill?",
-      "options": ["Better performance", "Slower execution", "More bugs", "Higher cost"],
-      "answer": "Better performance"
-    },
-    {
-      "question": "How do you typically apply this skill in a real-world scenario?",
-      "options": ["By guessing", "Through structured implementation", "Ignoring best practices", "Copy-pasting blindly"],
-      "answer": "Through structured implementation"
+  List<Map<String, dynamic>> questions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchQuiz();
+  }
+
+  Future<void> _fetchQuiz() async {
+    final response = await AiApiService.generateQuiz([widget.skillName]);
+    if (response != null && response['data'] != null && response['data']['quiz'] != null) {
+      final quizData = response['data']['quiz'] as List<dynamic>;
+      questions = quizData.map((q) => {
+        "question": q['question'] ?? "",
+        "options": q['options'] ?? [],
+        "answer": q['correct_answer'] ?? ""
+      }).toList();
     }
-  ];
+    setState(() {
+      isLoading = false;
+    });
+  }
 
   void _nextQuestion() {
     if (selectedOption == null) return;
@@ -51,6 +58,22 @@ class _QuizScreenState extends State<QuizScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        appBar: AppBar(title: Text("${widget.skillName} Assessment"), flexibleSpace: Container(decoration: const BoxDecoration(gradient: AppTheme.primaryGradient)), foregroundColor: Colors.white),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    
+    if (questions.isEmpty) {
+      return Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        appBar: AppBar(title: Text("${widget.skillName} Assessment"), flexibleSpace: Container(decoration: const BoxDecoration(gradient: AppTheme.primaryGradient)), foregroundColor: Colors.white),
+        body: const Center(child: Text("No questions available for this skill.")),
+      );
+    }
+
     if (isCompleted) {
       return _buildResultScreen();
     }

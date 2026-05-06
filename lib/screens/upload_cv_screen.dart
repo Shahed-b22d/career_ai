@@ -9,6 +9,7 @@ import 'package:printing/printing.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_input_field.dart';
+import '../services/ai_api_service.dart';
 import 'cv_analysis_screen.dart';
 
 class UploadScreen extends StatefulWidget {
@@ -21,6 +22,7 @@ class UploadScreen extends StatefulWidget {
 class _UploadScreenState extends State<UploadScreen> {
   File? pickedFile;
 
+  final targetJob = TextEditingController();
   final name = TextEditingController();
   final email = TextEditingController();
   final phone = TextEditingController();
@@ -114,6 +116,9 @@ class _UploadScreenState extends State<UploadScreen> {
 
             const SizedBox(height: 20),
 
+            CustomInputField(hint: "Target Job (e.g. Flutter Dev)", icon: Icons.work_outline, controller: targetJob),
+            const SizedBox(height: 10),
+
             CustomInputField(hint: "Name", icon: Icons.person, controller: name),
             const SizedBox(height: 10),
 
@@ -133,6 +138,10 @@ class _UploadScreenState extends State<UploadScreen> {
             CustomButton(
               text: "Analyze CV",
               onPressed: () async {
+                if (targetJob.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a Target Job')));
+                  return;
+                }
 
                 showDialog(
                   context: context,
@@ -140,17 +149,24 @@ class _UploadScreenState extends State<UploadScreen> {
                   builder: (_) => const FancyLoader(),
                 );
 
-                await Future.delayed(const Duration(seconds: 6));
+                String manualText = "Summary: ${summary.text}\nSkills: ${skills.text}\nExperience: ${experience.text}\nEducation: ${education.text}";
+                final response = await AiApiService.analyzeGap(targetJob.text, manualText);
 
-                if (mounted) Navigator.pop(context);
+                if (mounted) Navigator.pop(context); // Close loader
 
-                if (mounted) {
+                if (response != null && mounted) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const CvAnalysisScreen(),
+                      builder: (context) => CvAnalysisScreen(
+                        analysisData: response,
+                        targetJob: targetJob.text,
+                        userDataText: manualText,
+                      ),
                     ),
                   );
+                } else if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to analyze CV')));
                 }
               },
             ),
