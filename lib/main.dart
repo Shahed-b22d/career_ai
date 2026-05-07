@@ -20,23 +20,29 @@ import 'theme/app_theme.dart';
 import 'services/notification_service.dart';
 import 'screens/user_dashboard.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; // 🔥 تم الإضافة (مهم جدًا)
 import 'package:google_sign_in/google_sign_in.dart';
 import 'screens/admin_dashboard_pro.dart';
 import 'screens/admin_login_screen.dart';
 import 'package:flutter/foundation.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
- 
+
   // تفعيل خدمة الإشعارات
   await NotificationService().init();
   await NotificationService().requestPermission();
- 
+
   try {
-    await Firebase.initializeApp();
-   
-    // إعداد مكتبة جوجل الجديدة (v7) بالمعرف الخاص بالويب
+    // 🔥 التصحيح فقط هنا (بدون تغيير باقي مشروعك)
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+
+    // إعداد Google Sign-In
     await GoogleSignIn.instance.initialize(
-      serverClientId: '642116540552-4f8v4824t9m73v3chfs2s17bed1nnf35.apps.googleusercontent.com',
+      serverClientId:
+          '642116540552-4f8v4824t9m73v3chfs2s17bed1nnf35.apps.googleusercontent.com',
     );
   } catch (e) {
     debugPrint("Firebase init failed (Please configure Firebase later): $e");
@@ -54,10 +60,13 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'CareerAI',
 
-      // 🔹 أول شاشة
-      initialRoute: '/',      // 🔹 ربط الصفحات
+      initialRoute: '/',
+
       routes: {
-        '/': (context) => kIsWeb ? const AdminLoginScreen() : const SplashScreen(),        '/login': (context) => const AuthAndRoleSelectionWidget(),
+        '/': (context) => kIsWeb
+            ? const AdminLoginScreen()
+            : const SplashScreen(),
+        '/login': (context) => const AuthAndRoleSelectionWidget(),
         '/signup': (context) => const SignUpScreen(),
         '/home': (context) => MainScreen(),
         '/forgotPassword': (context) => const ForgotPasswordScreen(),
@@ -73,12 +82,11 @@ class MyApp extends StatelessWidget {
         '/activeJobs': (context) => const ActiveJobsScreen(),
         '/suggestedProfiles': (context) => const SuggestedProfilesScreen(),
         '/billing': (context) => const BillingScreen(),
-        '/userDashboard': (context) =>  UserDashboard(),
-         '/admin': (context) =>  AdminDashboardPro(),
-         '/adminLogin': (context) => const AdminLoginScreen(),
+        '/userDashboard': (context) => UserDashboard(),
+        '/admin': (context) => AdminDashboardPro(),
+        '/adminLogin': (context) => const AdminLoginScreen(),
       },
 
-      // 🔹 Theme (تطبيق الثيم الجديد)
       theme: AppTheme.lightTheme,
     );
   }

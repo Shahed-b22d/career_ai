@@ -71,13 +71,10 @@ class _UploadScreenState extends State<UploadScreen> {
 
       appBar: AppBar(
         title: const Text("Upload CV"),
-
-        // 🔥 سهم رجوع أبيض
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: AppTheme.primaryGradient,
@@ -109,6 +106,18 @@ class _UploadScreenState extends State<UploadScreen> {
                     ),
                     const SizedBox(height: 10),
                     const Text("Upload CV"),
+
+                    // 🔥 عرض اسم الملف بعد الرفع
+                    if (pickedFile != null) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        pickedFile!.path.split('/').last,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -116,16 +125,32 @@ class _UploadScreenState extends State<UploadScreen> {
 
             const SizedBox(height: 20),
 
-            CustomInputField(hint: "Target Job (e.g. Flutter Dev)", icon: Icons.work_outline, controller: targetJob),
+            CustomInputField(
+              hint: "Target Job (e.g. Flutter Dev)",
+              icon: Icons.work_outline,
+              controller: targetJob,
+            ),
             const SizedBox(height: 10),
 
-            CustomInputField(hint: "Name", icon: Icons.person, controller: name),
+            CustomInputField(
+              hint: "Name",
+              icon: Icons.person,
+              controller: name,
+            ),
             const SizedBox(height: 10),
 
-            CustomInputField(hint: "Email", icon: Icons.email, controller: email),
+            CustomInputField(
+              hint: "Email",
+              icon: Icons.email,
+              controller: email,
+            ),
             const SizedBox(height: 10),
 
-            CustomInputField(hint: "Phone", icon: Icons.phone, controller: phone),
+            CustomInputField(
+              hint: "Phone",
+              icon: Icons.phone,
+              controller: phone,
+            ),
             const SizedBox(height: 10),
 
             _textArea("Summary", summary),
@@ -138,8 +163,33 @@ class _UploadScreenState extends State<UploadScreen> {
             CustomButton(
               text: "Analyze CV",
               onPressed: () async {
+
                 if (targetJob.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a Target Job')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter a Target Job'),
+                    ),
+                  );
+                  return;
+                }
+
+                // 🔥 التحقق من رفع PDF
+                if (pickedFile == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please upload a PDF CV first'),
+                    ),
+                  );
+                  return;
+                }
+
+                // 🔥 التأكد أن الملف موجود فعليًا
+                if (!await pickedFile!.exists()) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Uploaded file not found'),
+                    ),
+                  );
                   return;
                 }
 
@@ -149,10 +199,15 @@ class _UploadScreenState extends State<UploadScreen> {
                   builder: (_) => const FancyLoader(),
                 );
 
-                String manualText = "Summary: ${summary.text}\nSkills: ${skills.text}\nExperience: ${experience.text}\nEducation: ${education.text}";
-                final response = await AiApiService.analyzeGap(targetJob.text, manualText);
+                String manualText =
+                    "Summary: ${summary.text}\nSkills: ${skills.text}\nExperience: ${experience.text}\nEducation: ${education.text}";
 
-                if (mounted) Navigator.pop(context); // Close loader
+                final response = await AiApiService.analyzeGap(
+                  targetJob.text,
+                  manualText,
+                );
+
+                if (mounted) Navigator.pop(context);
 
                 if (response != null && mounted) {
                   Navigator.push(
@@ -166,7 +221,11 @@ class _UploadScreenState extends State<UploadScreen> {
                     ),
                   );
                 } else if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to analyze CV')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Failed to analyze CV'),
+                    ),
+                  );
                 }
               },
             ),
@@ -257,17 +316,15 @@ class _FancyLoaderState extends State<FancyLoader>
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black.withOpacity(0.6), // 🔥 خلفية احترافية
+      color: Colors.black.withOpacity(0.6),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
 
-            // 💎 دائرة Gradient مع أيقونة ذكاء اصطناعي في المنتصف
             Stack(
               alignment: Alignment.center,
               children: [
-                // خلفية دائرية خفيفة
                 Container(
                   width: 120,
                   height: 120,
@@ -283,7 +340,6 @@ class _FancyLoaderState extends State<FancyLoader>
                     ],
                   ),
                 ),
-                // المؤشر الدائري المتدرج
                 SizedBox(
                   width: 120,
                   height: 120,
@@ -306,7 +362,6 @@ class _FancyLoaderState extends State<FancyLoader>
                     ),
                   ),
                 ),
-                // الأيقونة والنص في المنتصف
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -332,7 +387,6 @@ class _FancyLoaderState extends State<FancyLoader>
 
             const SizedBox(height: 25),
 
-            // ✨ نص متغير ناعم
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 400),
               child: Text(
@@ -342,7 +396,7 @@ class _FancyLoaderState extends State<FancyLoader>
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  decoration: TextDecoration.none, // ❌ بدون خط أصفر
+                  decoration: TextDecoration.none,
                 ),
               ),
             ),
