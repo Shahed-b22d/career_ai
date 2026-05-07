@@ -21,6 +21,9 @@ import 'services/notification_service.dart';
 import 'screens/user_dashboard.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'screens/admin_dashboard_pro.dart';
+import 'screens/admin_login_screen.dart';
+import 'package:flutter/foundation.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
  
@@ -52,12 +55,9 @@ class MyApp extends StatelessWidget {
       title: 'CareerAI',
 
       // 🔹 أول شاشة
-      initialRoute: '/',
-
-      // 🔹 ربط الصفحات
+      initialRoute: '/',      // 🔹 ربط الصفحات
       routes: {
-        '/': (context) => const SplashScreen(),
-        '/login': (context) => const AuthAndRoleSelectionWidget(),
+        '/': (context) => kIsWeb ? const AdminLoginScreen() : const SplashScreen(),        '/login': (context) => const AuthAndRoleSelectionWidget(),
         '/signup': (context) => const SignUpScreen(),
         '/home': (context) => MainScreen(),
         '/forgotPassword': (context) => const ForgotPasswordScreen(),
@@ -74,6 +74,8 @@ class MyApp extends StatelessWidget {
         '/suggestedProfiles': (context) => const SuggestedProfilesScreen(),
         '/billing': (context) => const BillingScreen(),
         '/userDashboard': (context) =>  UserDashboard(),
+         '/admin': (context) =>  AdminDashboardPro(),
+         '/adminLogin': (context) => const AdminLoginScreen(),
       },
 
       // 🔹 Theme (تطبيق الثيم الجديد)
