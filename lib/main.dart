@@ -41,8 +41,8 @@ void main() async {
 
     // إعداد Google Sign-In
     await GoogleSignIn.instance.initialize(
-      serverClientId:
-          '642116540552-4f8v4824t9m73v3chfs2s17bed1nnf35.apps.googleusercontent.com',
+      clientId: '642116540552-4f8v4824t9m73v3chfs2s17bed1nnf35.apps.googleusercontent.com',
+      serverClientId: '642116540552-4f8v4824t9m73v3chfs2s17bed1nnf35.apps.googleusercontent.com',
     );
   } catch (e) {
     debugPrint("Firebase init failed (Please configure Firebase later): $e");
