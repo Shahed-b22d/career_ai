@@ -178,39 +178,89 @@ class _UserDashboardState extends State<UserDashboard> {
     );
   }
 
-  // 🔹 Skills Progress (Dynamic)
+  // 🔹 Skills Progress (Dynamic & Redesigned 🔥)
   Widget _buildSkillsProgress() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Your Skills Progress", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        ...acquiredSkills.map((skill) => _skill(skill, 1.0, Colors.green)), // Acquired at 100%
-        ...missingSkills.map((skill) => _skill(skill, 0.2, AppTheme.primaryColor)), // Missing at 20%
+        if (acquiredSkills.isNotEmpty) ...[
+          const Text("Acquired Skills", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: acquiredSkills.map((skill) => Chip(
+              label: Text(skill, style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.green)),
+              backgroundColor: Colors.green.shade50,
+              side: BorderSide(color: Colors.green.shade200),
+              avatar: const Icon(Icons.check_circle, color: Colors.green, size: 18),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            )).toList(),
+          ),
+          const SizedBox(height: 24),
+        ],
+        if (missingSkills.isNotEmpty) ...[
+          const Text("Skills to Master", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          ...missingSkills.map((skill) => _missingSkillCard(skill)),
+        ]
       ],
     );
   }
 
-  Widget _skill(String name, double progress, Color color) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(name, style: const TextStyle(fontWeight: FontWeight.w500)),
-              Text("${(progress * 100).toInt()}%", style: TextStyle(color: color, fontWeight: FontWeight.bold)),
-            ],
+  Widget _missingSkillCard(String name) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
-          const SizedBox(height: 6),
-          LinearProgressIndicator(
-            value: progress,
-            backgroundColor: Colors.grey.shade200,
-            valueColor: AlwaysStoppedAnimation(color),
-            borderRadius: BorderRadius.circular(10),
-            minHeight: 8,
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.lock_clock_outlined, color: AppTheme.primaryColor, size: 20),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              name,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimaryColor,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange.shade200),
+            ),
+            child: Text(
+              "Pending",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.orange.shade700,
+              ),
+            ),
           ),
         ],
       ),
