@@ -276,6 +276,33 @@ class _RoadmapScreenState extends State<RoadmapScreen> {
               },
             ),
           ),
+          
+          // Back to Dashboard Button
+          Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.pushNamedAndRemoveUntil(context, '/userDashboard', (route) => false),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: const BorderSide(color: AppTheme.primaryColor),
+                  ),
+                ),
+                child: const Text(
+                  "Back to Dashboard",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

@@ -1,40 +1,70 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../services/local_storage_service.dart';
+import 'roadmap_screen.dart';
 
-class UserDashboard extends StatelessWidget {
+class UserDashboard extends StatefulWidget {
   const UserDashboard({super.key});
+
+  @override
+  State<UserDashboard> createState() => _UserDashboardState();
+}
+
+class _UserDashboardState extends State<UserDashboard> {
+  double matchScore = 0.0;
+  List<String> acquiredSkills = [];
+  List<String> missingSkills = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final data = await LocalStorageService.getAnalysisData();
+    setState(() {
+      matchScore = data['matchScore'] ?? 0.0;
+      acquiredSkills = data['acquiredSkills'] ?? [];
+      missingSkills = data['missingSkills'] ?? [];
+      isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context),
-              const SizedBox(height: 24),
-              _buildAiInsight(context),
-              const SizedBox(height: 24),
-              _buildStats(context),
-              const SizedBox(height: 32),
-              _buildSkillsProgress(),
-              const SizedBox(height: 32),
-              _buildRoadmapSection(context),
-              const SizedBox(height: 32),
-              _buildRecentActivity(),
-              const SizedBox(height: 32),
-              _buildActions(context),
-            ],
-          ),
-        ),
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(context),
+                    const SizedBox(height: 24),
+                    _buildAiInsight(context),
+                    const SizedBox(height: 24),
+                    _buildStats(context),
+                    const SizedBox(height: 32),
+                    if (acquiredSkills.isNotEmpty || missingSkills.isNotEmpty)
+                      _buildSkillsProgress(),
+                    const SizedBox(height: 32),
+                    if (missingSkills.isNotEmpty)
+                      _buildRoadmapSection(context),
+                    const SizedBox(height: 32),
+                    _buildActions(context),
+                  ],
+                ),
+              ),
       ),
     );
   }
 
-  // 🔹 Header (محسّن)
+  // 🔹 Header
   Widget _buildHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -42,11 +72,10 @@ class UserDashboard extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Welcome back 👋",
-                style: TextStyle(fontSize: 16, color: Colors.black54)),
+            const Text("Welcome back 👋", style: TextStyle(fontSize: 16, color: Colors.black54)),
             const SizedBox(height: 4),
             Text(
-              "User Name",
+              "Career Trainee",
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -69,11 +98,22 @@ class UserDashboard extends StatelessWidget {
     );
   }
 
-  // 🔹 AI Insight (Clickable)
+  // 🔹 AI Insight (Dynamic)
   Widget _buildAiInsight(BuildContext context) {
+    String message = "Upload a CV to let AI analyze your career path 🚀";
+    if (missingSkills.isNotEmpty) {
+      message = "AI suggests improving: ${missingSkills.take(2).join(', ')} 🔥";
+    } else if (acquiredSkills.isNotEmpty) {
+      message = "You have all the required skills! Generate your ATS CV now 🌟";
+    }
+
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(context, '/roadmap');
+        if (missingSkills.isNotEmpty) {
+           // Go to roadmap
+        } else {
+           Navigator.pushNamed(context, '/uploadCV');
+        }
       },
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -84,29 +124,29 @@ class UserDashboard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
-          children: const [
-            Icon(Icons.auto_awesome, color: Colors.white),
-            SizedBox(width: 12),
+          children: [
+            const Icon(Icons.auto_awesome, color: Colors.white),
+            const SizedBox(width: 12),
             Expanded(
               child: Text(
-                "AI suggests improving your Flutter & UI skills 🔥",
-                style: TextStyle(color: Colors.white),
+                message,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
-            Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16)
+            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16)
           ],
         ),
       ),
     );
   }
 
-  // 🔹 Stats (مثل الشركة)
+  // 🔹 Stats (Dynamic)
   Widget _buildStats(BuildContext context) {
     return Row(
       children: [
-        _card("Skills", "12", Icons.psychology, Colors.blue),
+        _card("Match Score", "${(matchScore * 100).toInt()}%", Icons.analytics, Colors.blue),
         const SizedBox(width: 16),
-        _card("Completed", "5", Icons.check_circle, Colors.green),
+        _card("Acquired Skills", "${acquiredSkills.length}", Icons.verified, Colors.green),
       ],
     );
   }
@@ -130,9 +170,7 @@ class UserDashboard extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 28),
             const SizedBox(height: 10),
-            Text(value,
-                style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             Text(title, style: const TextStyle(fontSize: 12)),
           ],
         ),
@@ -140,31 +178,37 @@ class UserDashboard extends StatelessWidget {
     );
   }
 
-  // 🔹 Skills Progress (جديد 🔥)
+  // 🔹 Skills Progress (Dynamic)
   Widget _buildSkillsProgress() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Your Skills",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const Text("Your Skills Progress", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
-        _skill("Flutter", 0.8),
-        _skill("UI/UX", 0.6),
-        _skill("Backend", 0.4),
+        ...acquiredSkills.map((skill) => _skill(skill, 1.0, Colors.green)), // Acquired at 100%
+        ...missingSkills.map((skill) => _skill(skill, 0.2, AppTheme.primaryColor)), // Missing at 20%
       ],
     );
   }
 
-  Widget _skill(String name, double progress) {
+  Widget _skill(String name, double progress, Color color) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(name),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(name, style: const TextStyle(fontWeight: FontWeight.w500)),
+              Text("${(progress * 100).toInt()}%", style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+            ],
+          ),
           const SizedBox(height: 6),
           LinearProgressIndicator(
             value: progress,
+            backgroundColor: Colors.grey.shade200,
+            valueColor: AlwaysStoppedAnimation(color),
             borderRadius: BorderRadius.circular(10),
             minHeight: 8,
           ),
@@ -178,24 +222,36 @@ class UserDashboard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Your Roadmap",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const Text("Your Roadmap", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Row(
             children: [
               const Icon(Icons.map, color: Colors.blue),
               const SizedBox(width: 12),
-              const Expanded(child: Text("Continue your roadmap")),
+              const Expanded(child: Text("Continue your learning roadmap")),
               IconButton(
                 icon: const Icon(Icons.arrow_forward),
                 onPressed: () {
-                  Navigator.pushNamed(context, '/roadmap');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => RoadmapScreen(
+                      targetJob: "Target Role", // Could be saved locally if needed
+                      missingSkills: missingSkills,
+                    )),
+                  );
                 },
               )
             ],
@@ -205,43 +261,11 @@ class UserDashboard extends StatelessWidget {
     );
   }
 
-  // 🔹 Recent Activity (جديد 🔥)
-  Widget _buildRecentActivity() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("Recent Activity",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        _activity("Uploaded CV", Icons.upload),
-        _activity("Completed Flutter Basics", Icons.check),
-      ],
-    );
-  }
-
-  Widget _activity(String text, IconData icon) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.blue),
-          const SizedBox(width: 10),
-          Text(text),
-        ],
-      ),
-    );
-  }
-
   // 🔹 Actions
   Widget _buildActions(BuildContext context) {
     return Column(
       children: [
-        _actionButton("Upload CV", Icons.upload, () {
+        _actionButton("Upload New CV", Icons.upload, () {
           Navigator.pushNamed(context, '/uploadCV');
         }),
       ],
@@ -256,6 +280,7 @@ class UserDashboard extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         minimumSize: const Size(double.infinity, 50),
         backgroundColor: const Color(0xFF0052FF),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

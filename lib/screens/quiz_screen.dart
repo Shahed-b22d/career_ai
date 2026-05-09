@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_button.dart';
 import '../services/ai_api_service.dart';
+import '../services/local_storage_service.dart';
 
 class QuizScreen extends StatefulWidget {
   final String skillName;
@@ -17,6 +18,7 @@ class _QuizScreenState extends State<QuizScreen> {
   String? selectedOption;
   bool isCompleted = false;
   bool isLoading = true;
+  int score = 0;
 
   List<Map<String, dynamic>> questions = [];
 
@@ -43,6 +45,11 @@ class _QuizScreenState extends State<QuizScreen> {
 
   void _nextQuestion() {
     if (selectedOption == null) return;
+
+    final question = questions[currentQuestionIndex];
+    if (selectedOption == question["answer"]) {
+      score++;
+    }
 
     if (currentQuestionIndex < questions.length - 1) {
       setState(() {
@@ -211,6 +218,9 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Widget _buildResultScreen() {
+    int requiredToPass = (questions.length * 0.6).ceil(); // 60% passing rate
+    bool passed = score >= requiredToPass;
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: Center(
@@ -222,27 +232,36 @@ class _QuizScreenState extends State<QuizScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.green.shade50,
+                  color: passed ? Colors.green.shade50 : Colors.red.shade50,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.emoji_events_rounded, size: 80, color: Colors.green.shade600),
+                child: Icon(
+                  passed ? Icons.emoji_events_rounded : Icons.cancel_rounded, 
+                  size: 80, 
+                  color: passed ? Colors.green.shade600 : Colors.red.shade600
+                ),
               ),
               const SizedBox(height: 24),
-              const Text(
-                "Skill Verified!",
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.textPrimaryColor),
+              Text(
+                passed ? "Skill Verified!" : "Assessment Failed",
+                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.textPrimaryColor),
               ),
               const SizedBox(height: 12),
               Text(
-                "Great job! You have demonstrated knowledge in ${widget.skillName}.",
+                passed 
+                  ? "Great job! You scored $score out of ${questions.length} and demonstrated solid knowledge in ${widget.skillName}."
+                  : "You only scored $score out of ${questions.length}. Please review the course materials and try again.",
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16, color: AppTheme.textSecondaryColor, height: 1.5),
               ),
               const SizedBox(height: 48),
               CustomButton(
-                text: "Continue Roadmap",
-                onPressed: () {
-                  Navigator.pop(context, true); // Return success
+                text: passed ? "Continue Roadmap" : "Back to Roadmap",
+                onPressed: () async {
+                  if (passed) {
+                    await LocalStorageService.acquireSkill(widget.skillName);
+                  }
+                  if (mounted) Navigator.pop(context, passed); // Return success or fail
                 },
               ),
             ],

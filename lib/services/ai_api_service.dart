@@ -7,20 +7,50 @@ class AiApiService {
   // Base URL for Android Emulator pointing to Localhost
   static const String baseUrl = 'http://10.0.2.2:8000/api/ai';
 
+  /// دالة مساعدة لتنظيف الردود القادمة من السيرفر من أي تحذيرات (PHP Warnings)
+  static dynamic _cleanAndDecode(String body) {
+    body = body.trim();
+    // إذا كان الرد لا يبدأ بقوس JSON، نبحث عن أول قوس ونتجاهل ما قبله
+    if (!body.startsWith('{') && !body.startsWith('[')) {
+      int startObject = body.indexOf('{');
+      int startArray = body.indexOf('[');
+      
+      int startIndex = -1;
+      if (startObject != -1 && startArray != -1) {
+        startIndex = startObject < startArray ? startObject : startArray;
+      } else if (startObject != -1) {
+        startIndex = startObject;
+      } else {
+        startIndex = startArray;
+      }
+      
+      if (startIndex != -1) {
+        body = body.substring(startIndex);
+      }
+    }
+    return jsonDecode(body);
+  }
+
   /// 1. Gap Analysis
-  static Future<Map<String, dynamic>?> analyzeGap(String targetJob, String manualText) async {
+  static Future<Map<String, dynamic>?> analyzeGap(String targetJob, String manualText, {File? cvFile}) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/cv/gap-analysis'),
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
-        body: jsonEncode({
-          'target_job': targetJob,
-          'manual_text': manualText,
-        }),
-      );
+      var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/cv/gap-analysis'));
+      request.headers['Accept'] = 'application/json';
+      
+      request.fields['target_job'] = targetJob;
+      if (manualText.isNotEmpty) {
+        request.fields['manual_text'] = manualText;
+      }
+
+      if (cvFile != null) {
+        request.files.add(await http.MultipartFile.fromPath('cv_file', cvFile.path));
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        return _cleanAndDecode(response.body);
       } else {
         print("Error in analyzeGap: ${response.statusCode} - ${response.body}");
         return null;
@@ -44,7 +74,7 @@ class AiApiService {
       );
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        return _cleanAndDecode(response.body);
       } else {
         print("Error in generateRoadmap: ${response.statusCode} - ${response.body}");
         return null;
@@ -67,7 +97,7 @@ class AiApiService {
       );
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        return _cleanAndDecode(response.body);
       } else {
         print("Error in generateQuiz: ${response.statusCode} - ${response.body}");
         return null;

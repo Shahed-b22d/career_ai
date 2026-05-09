@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_button.dart';
 import '../services/ai_api_service.dart';
+import '../services/local_storage_service.dart';
 import 'roadmap_screen.dart';
 
 class CvAnalysisScreen extends StatefulWidget {
@@ -42,6 +43,13 @@ class _CvAnalysisScreenState extends State<CvAnalysisScreen> with SingleTickerPr
       if (data['match_percentage'] != null) {
         matchScore = (data['match_percentage'] as num).toDouble() / 100;
       }
+      
+      // 🔥 حفظ البيانات محلياً حتى تقرأها الـ Dashboard
+      LocalStorageService.saveAnalysisData(
+        matchScore: matchScore,
+        acquiredSkills: acquiredSkills,
+        missingSkills: missingSkills,
+      );
     }
     _animationController = AnimationController(
       vsync: this,
@@ -222,7 +230,7 @@ class _CvAnalysisScreenState extends State<CvAnalysisScreen> with SingleTickerPr
             SizedBox(
               width: double.infinity,
               child: TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pushNamedAndRemoveUntil(context, '/userDashboard', (route) => false),
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),

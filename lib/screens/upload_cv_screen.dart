@@ -205,6 +205,7 @@ class _UploadScreenState extends State<UploadScreen> {
                 final response = await AiApiService.analyzeGap(
                   targetJob.text,
                   manualText,
+                  cvFile: pickedFile,
                 );
 
                 if (mounted) Navigator.pop(context);
@@ -216,7 +217,7 @@ class _UploadScreenState extends State<UploadScreen> {
                       builder: (context) => CvAnalysisScreen(
                         analysisData: response,
                         targetJob: targetJob.text,
-                        userDataText: manualText,
+                        userDataText: manualText.isNotEmpty ? manualText : (response['cv_text'] ?? ""),
                       ),
                     ),
                   );
