@@ -33,12 +33,12 @@ class _RoadmapScreenState extends State<RoadmapScreen> {
       final data = response['data'];
       fullRoadmapText = data['roadmap'] ?? "";
       
-      final courses = data['suggested_courses'] as List<dynamic>?;
-      if (courses != null) {
-        roadmapSteps = courses.map((c) => {
-          "title": c['skill'] ?? "Unknown Skill",
-          "description": c['title'] ?? "Recommended Course",
-          "url": c['url'] ?? "",
+      final skillsCourses = data['skills_courses'] as List<dynamic>?;
+      if (skillsCourses != null) {
+        roadmapSteps = skillsCourses.map((sc) => {
+          "title": sc['skill'] ?? "Unknown Skill",
+          "description": "Master this skill by exploring the recommended free courses.",
+          "courses": sc['courses'] ?? [],
           "duration": "Self-paced",
           "isCompleted": false,
         }).toList();
@@ -61,7 +61,9 @@ class _RoadmapScreenState extends State<RoadmapScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        final List courses = step["courses"] ?? [];
         return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.only(
@@ -71,7 +73,6 @@ class _RoadmapScreenState extends State<RoadmapScreen> {
           ),
           padding: const EdgeInsets.all(32),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
@@ -110,52 +111,99 @@ class _RoadmapScreenState extends State<RoadmapScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                "Recommended Course",
+                "Recommended Free Courses",
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.grey.shade700,
                 ),
               ),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () async {
-                  final url = step["url"];
-                  if (url != null && url.isNotEmpty) {
-                    final uri = Uri.parse(url);
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
-                    } else {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Could not launch URL')),
-                        );
-                      }
-                    }
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.blue.shade200),
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.link, color: Colors.blue),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          step["url"] ?? "No URL provided",
-                          style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
-                        ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: courses.isEmpty
+                    ? const Center(child: Text("No courses found for this skill."))
+                    : ListView.builder(
+                        itemCount: courses.length,
+                        itemBuilder: (context, index) {
+                          final course = courses[index];
+                          final isYouTube = course['platform'] == 'YouTube';
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.blue.shade200),
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      isYouTube ? Icons.smart_display : Icons.school,
+                                      color: isYouTube ? Colors.red : Colors.blue,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      course['platform'] ?? "Online Platform",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: isYouTube ? Colors.red : Colors.blue,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  course['title'] ?? "Course Link",
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                    color: AppTheme.textPrimaryColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    onPressed: () async {
+                                      String url = course["url"] ?? "";
+                                      if (url.isNotEmpty) {
+                                        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                                          url = "https://" + url;
+                                        }
+                                        final uri = Uri.parse(url);
+                                        try {
+                                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                        } catch (e) {
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('Could not launch URL: $url')),
+                                            );
+                                          }
+                                        }
+                                      }
+                                    },
+                                    icon: const Icon(Icons.open_in_new, size: 18),
+                                    label: const Text("Open Course"),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppTheme.primaryColor,
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
-                    ],
-                  ),
-                ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
               CustomButton(
                 text: "Close",
                 onPressed: () => Navigator.pop(context),
