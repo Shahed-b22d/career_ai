@@ -26,6 +26,9 @@ dependencies:
   android_intent_plus: ^5.0.2
   fl_chart: ^1.2.0
   shared_preferences: ^2.2.3
+  url_launcher: ^6.3.0
+  open_filex: ^4.5.2
+  share_plus: ^10.1.2
 
 
 dev_dependencies:

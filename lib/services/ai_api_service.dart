@@ -127,11 +127,16 @@ class AiApiService {
         return file.path;
       } else {
         print("Error in generateAtsCv: ${response.statusCode} - ${response.body}");
-        return null;
+        try {
+           final errData = jsonDecode(response.body);
+           return "Error: ${errData['error'] ?? response.statusCode}";
+        } catch (_) {
+           return "Error: Server returned ${response.statusCode}";
+        }
       }
     } catch (e) {
       print("Exception in generateAtsCv: $e");
-      return null;
+      return "Error: $e";
     }
   }
 }

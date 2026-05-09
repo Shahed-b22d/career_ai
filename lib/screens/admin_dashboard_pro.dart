@@ -126,7 +126,7 @@ class _AdminDashboardProState extends State<AdminDashboardPro> with SingleTicker
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.white54),
             title: const Text("Logout", style: TextStyle(color: Colors.white54)),
-            onTap: () => Navigator.pushReplacementNamed(context, '/login'),
+            onTap: () => Navigator.pushReplacementNamed(context, '/adminLogin'),
           ),
           const SizedBox(height: 20),
         ],

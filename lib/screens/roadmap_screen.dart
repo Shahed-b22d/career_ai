@@ -3,6 +3,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/custom_button.dart';
 import '../services/ai_api_service.dart';
 import 'quiz_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class RoadmapScreen extends StatefulWidget {
   final String targetJob;
@@ -117,23 +118,41 @@ class _RoadmapScreenState extends State<RoadmapScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade200),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.link, color: Colors.blue),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        step["url"] ?? "No URL provided",
-                        style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
+              GestureDetector(
+                onTap: () async {
+                  final url = step["url"];
+                  if (url != null && url.isNotEmpty) {
+                    final uri = Uri.parse(url);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    } else {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Could not launch URL')),
+                        );
+                      }
+                    }
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.blue.shade200),
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.link, color: Colors.blue),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          step["url"] ?? "No URL provided",
+                          style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 32),
