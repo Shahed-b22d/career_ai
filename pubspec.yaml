@@ -25,6 +25,7 @@ dependencies:
   flutter_local_notifications: ^17.1.2
   android_intent_plus: ^5.0.2
   fl_chart: ^1.2.0
+  shared_preferences: ^2.2.3
 
 
 dev_dependencies:

@@ -66,11 +66,13 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       backgroundColor: const Color(0xFFF0F4F8), // Soft background
       body: Center(
         child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 450),
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
                 // Top Logo / Icon Area
                 Container(
                   padding: const EdgeInsets.all(24),

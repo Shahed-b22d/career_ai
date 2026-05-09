@@ -65,9 +65,26 @@ class _AdminDashboardProState extends State<AdminDashboardPro> with SingleTicker
           Expanded(
             child: FadeTransition(
               opacity: fade,
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: _buildPageContent(),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: 1200,
+                        maxHeight: constraints.maxHeight,
+                      ),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: constraints.maxHeight,
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: _buildPageContent(),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           )
