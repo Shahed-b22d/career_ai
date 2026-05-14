@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AiApiService {
   // Base URL for Android Emulator pointing to Localhost
   static const String baseUrl = 'http://10.0.2.2:8000/api/ai';
+  static const String authUrl = 'http://10.0.2.2:8000/api/auth';
 
   /// دالة مساعدة لتنظيف الردود القادمة من السيرفر من أي تحذيرات (PHP Warnings)
   static dynamic _cleanAndDecode(String body) {
@@ -49,8 +50,11 @@ class AiApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/register'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('$authUrl/register'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         body: jsonEncode({
           'name': name,
           'email': email,
@@ -67,12 +71,17 @@ class AiApiService {
         await prefs.setString('auth_token', data['token']);
         return data;
       } else {
-        print("Error in register: ${response.statusCode} - ${response.body}");
-        return null;
+        String errorMsg = response.body;
+        try {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map && decoded.containsKey('message')) {
+            errorMsg = decoded['message'];
+          }
+        } catch (_) {}
+        throw Exception("Server Error (${response.statusCode}): $errorMsg");
       }
     } catch (e) {
-      print("Exception in register: $e");
-      return null;
+      throw Exception("$e");
     }
   }
 
@@ -84,8 +93,11 @@ class AiApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/login'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('$authUrl/login'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         body: jsonEncode({
           'email': email,
           'password': password,
@@ -99,12 +111,17 @@ class AiApiService {
         await prefs.setString('auth_token', data['token']);
         return data;
       } else {
-        print("Error in login: ${response.statusCode} - ${response.body}");
-        return null;
+        String errorMsg = response.body;
+        try {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map && decoded.containsKey('message')) {
+            errorMsg = decoded['message'];
+          }
+        } catch (_) {}
+        throw Exception("Server Error (${response.statusCode}): $errorMsg");
       }
     } catch (e) {
-      print("Exception in login: $e");
-      return null;
+      throw Exception("$e");
     }
   }
 
@@ -115,7 +132,7 @@ class AiApiService {
       if (token == null) return false;
 
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/logout'),
+        Uri.parse('$authUrl/logout'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
