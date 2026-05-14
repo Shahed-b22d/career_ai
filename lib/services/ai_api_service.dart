@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AiApiService {
   // Base URL for Android Emulator pointing to Localhost
@@ -31,7 +32,111 @@ class AiApiService {
     return jsonDecode(body);
   }
 
-  /// 1. Gap Analysis
+  // Helper function to get token
+  static Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('auth_token');
+  }
+
+  // 1. Auth: Register
+  static Future<Map<String, dynamic>?> register({
+    required String name,
+    required String email,
+    required String password,
+    required String role,
+    String? phone,
+    String? businessType,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'password': password,
+          'role': role,
+          'phone': phone,
+          'business_type': businessType,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', data['token']);
+        return data;
+      } else {
+        print("Error in register: ${response.statusCode} - ${response.body}");
+        return null;
+      }
+    } catch (e) {
+      print("Exception in register: $e");
+      return null;
+    }
+  }
+
+  // 2. Auth: Login
+  static Future<Map<String, dynamic>?> login({
+    required String email,
+    required String password,
+    required String role,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+          'role': role,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', data['token']);
+        return data;
+      } else {
+        print("Error in login: ${response.statusCode} - ${response.body}");
+        return null;
+      }
+    } catch (e) {
+      print("Exception in login: $e");
+      return null;
+    }
+  }
+
+  // 3. Auth: Logout
+  static Future<bool> logout() async {
+    try {
+      final token = await getToken();
+      if (token == null) return false;
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/logout'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('auth_token');
+        return true;
+      } else {
+        print("Error in logout: ${response.statusCode} - ${response.body}");
+        return false;
+      }
+    } catch (e) {
+      print("Exception in logout: $e");
+      return false;
+    }
+  }
+
+  /// AI 1. Gap Analysis
   static Future<Map<String, dynamic>?> analyzeGap(String targetJob, String manualText, {File? cvFile}) async {
     try {
       var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/cv/gap-analysis'));
