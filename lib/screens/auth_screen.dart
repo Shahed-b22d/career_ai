@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_input_field.dart';
+import '../services/ai_api_service.dart';
 
 class AuthAndRoleSelectionWidget extends StatefulWidget {
   const AuthAndRoleSelectionWidget({super.key});
@@ -26,6 +27,52 @@ class _AuthAndRoleSelectionWidgetState
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> loginWithEmail() async {
+    final email = emailController.text.trim();
+    final password = passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill all fields'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final result = await AiApiService.login(
+      email: email,
+      password: password,
+      role: selectedRole,
+    );
+
+    if (mounted) Navigator.pop(context); // close loading
+
+    if (result != null) {
+      if (selectedRole == 'company') {
+        Navigator.pushReplacementNamed(context, '/companyDashboard');
+      } else {
+        Navigator.pushReplacementNamed(context, '/userDashboard');
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Login failed. Check your email, password, and role.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> signInWithGoogle() async {
@@ -285,11 +332,7 @@ class _AuthAndRoleSelectionWidgetState
                 CustomButton(
                   text: "Login",
                   onPressed: () {
-                    if (selectedRole == 'company') {
-                      Navigator.pushReplacementNamed(context, '/companyDashboard');
-                    } else {
-                      Navigator.pushReplacementNamed(context, '/userDashboard');
-                    }
+                    loginWithEmail();
                   },
                 ),
                 const SizedBox(height: 16),

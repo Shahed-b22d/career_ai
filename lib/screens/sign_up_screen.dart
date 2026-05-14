@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_input_field.dart';
+import '../services/ai_api_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -319,19 +320,40 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
               CustomButton(
                 text: "Create Account",
-                onPressed: () {
+                onPressed: () async {
                   if (!validate()) return;
 
-                  Navigator.pushReplacementNamed(
-                    context,
-                    selectedRole == "job" ? '/personProfile' : '/companyDashboard',
-                    arguments: {
-                      "name": fullNameController.text,
-                      "email": emailController.text,
-                      "phone": phoneController.text,
-                      "businessType": businessTypeController.text,
-                    },
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) => const Center(child: CircularProgressIndicator()),
                   );
+
+                  final result = await AiApiService.register(
+                    name: fullNameController.text.trim(),
+                    email: emailController.text.trim(),
+                    password: passwordController.text,
+                    role: selectedRole,
+                    phone: phoneController.text.trim(),
+                    businessType: selectedRole == 'company' ? businessTypeController.text.trim() : null,
+                  );
+
+                  if (mounted) Navigator.pop(context); // close dialog
+
+                  if (result != null) {
+                    Navigator.pushReplacementNamed(
+                      context,
+                      selectedRole == "job" ? '/personProfile' : '/companyDashboard',
+                      arguments: {
+                        "name": fullNameController.text,
+                        "email": emailController.text,
+                        "phone": phoneController.text,
+                        "businessType": businessTypeController.text,
+                      },
+                    );
+                  } else {
+                    showError("Registration failed. Email might already exist.");
+                  }
                 },
               ),
               const SizedBox(height: 30),
