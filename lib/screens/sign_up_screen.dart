@@ -329,30 +329,33 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     builder: (context) => const Center(child: CircularProgressIndicator()),
                   );
 
-                  final result = await AiApiService.register(
-                    name: fullNameController.text.trim(),
-                    email: emailController.text.trim(),
-                    password: passwordController.text,
-                    role: selectedRole,
-                    phone: phoneController.text.trim(),
-                    businessType: selectedRole == 'company' ? businessTypeController.text.trim() : null,
-                  );
-
-                  if (mounted) Navigator.pop(context); // close dialog
-
-                  if (result != null) {
-                    Navigator.pushReplacementNamed(
-                      context,
-                      selectedRole == "job" ? '/personProfile' : '/companyDashboard',
-                      arguments: {
-                        "name": fullNameController.text,
-                        "email": emailController.text,
-                        "phone": phoneController.text,
-                        "businessType": businessTypeController.text,
-                      },
+                  try {
+                    final result = await AiApiService.register(
+                      name: fullNameController.text.trim(),
+                      email: emailController.text.trim(),
+                      password: passwordController.text,
+                      role: selectedRole,
+                      phone: phoneController.text.trim(),
+                      businessType: selectedRole == 'company' ? businessTypeController.text.trim() : null,
                     );
-                  } else {
-                    showError("Registration failed. Email might already exist.");
+
+                    if (mounted) Navigator.pop(context); // close dialog
+
+                    if (result != null) {
+                      Navigator.pushReplacementNamed(
+                        context,
+                        selectedRole == "job" ? '/personProfile' : '/companyDashboard',
+                        arguments: {
+                          "name": fullNameController.text,
+                          "email": emailController.text,
+                          "phone": phoneController.text,
+                          "businessType": businessTypeController.text,
+                        },
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) Navigator.pop(context); // close dialog
+                    showError(e.toString());
                   }
                 },
               ),

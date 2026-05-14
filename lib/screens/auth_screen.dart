@@ -49,26 +49,30 @@ class _AuthAndRoleSelectionWidgetState
       builder: (context) => const Center(child: CircularProgressIndicator()),
     );
 
-    final result = await AiApiService.login(
-      email: email,
-      password: password,
-      role: selectedRole,
-    );
+    try {
+      final result = await AiApiService.login(
+        email: email,
+        password: password,
+        role: selectedRole,
+      );
 
-    if (mounted) Navigator.pop(context); // close loading
+      if (mounted) Navigator.pop(context); // close loading
 
-    if (result != null) {
-      if (selectedRole == 'company') {
-        Navigator.pushReplacementNamed(context, '/companyDashboard');
-      } else {
-        Navigator.pushReplacementNamed(context, '/userDashboard');
+      if (result != null) {
+        if (selectedRole == 'company') {
+          Navigator.pushReplacementNamed(context, '/companyDashboard');
+        } else {
+          Navigator.pushReplacementNamed(context, '/userDashboard');
+        }
       }
-    } else {
+    } catch (e) {
       if (mounted) {
+        Navigator.pop(context); // close loading
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login failed. Check your email, password, and role.'),
+          SnackBar(
+            content: Text(e.toString()),
             backgroundColor: Colors.redAccent,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
