@@ -431,6 +431,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   ? otherBusinessTypeController.text
                                   : selectedBusinessType)
                               : null,
+                      commercialRegisterFile: selectedRole == 'company' ? commercialRegisterFile : null,
                     );
 
                     if (mounted) Navigator.pop(context);
