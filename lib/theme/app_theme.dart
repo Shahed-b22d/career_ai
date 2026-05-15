@@ -50,14 +50,14 @@ class AppTheme {
         ),
       ),
 
-      // 🔹 تنسيق الـ AppBar
+      // 🔹 تنسيق الـ AppBar الموحد
       appBarTheme: AppBarTheme(
-        backgroundColor: Colors.transparent,
+        backgroundColor: primaryColor,
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: primaryColor),
+        iconTheme: const IconThemeData(color: Colors.white), // أيقونات بيضاء
         titleTextStyle: GoogleFonts.poppins(
-          color: textPrimaryColor,
+          color: Colors.white, // خط أبيض ناصع
           fontSize: 20,
           fontWeight: FontWeight.bold,
         ),

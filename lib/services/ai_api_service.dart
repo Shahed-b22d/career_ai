@@ -3,15 +3,18 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'local_storage_service.dart';
 
 class AiApiService {
-  // Base URL for Android Emulator pointing to Localhost
-  static const String baseUrl = 'http://10.0.2.2:8000/api/ai';
-  static const String authUrl = 'http://10.0.2.2:8000/api/auth';
+  // Base URL for Real Device pointing to Localhost via ADB Reverse
+  static const String baseUrl = 'http://localhost:8000/api/ai';
+  static const String authUrl = 'http://localhost:8000/api/auth';
 
   /// دالة مساعدة لتنظيف الردود القادمة من السيرفر من أي تحذيرات (PHP Warnings)
   static dynamic _cleanAndDecode(String body) {
     body = body.trim();
+    if (body.isEmpty) return {};
+
     // إذا كان الرد لا يبدأ بقوس JSON، نبحث عن أول قوس ونتجاهل ما قبله
     if (!body.startsWith('{') && !body.startsWith('[')) {
       int startObject = body.indexOf('{');
@@ -19,18 +22,24 @@ class AiApiService {
       
       int startIndex = -1;
       if (startObject != -1 && startArray != -1) {
-        startIndex = startObject < startArray ? startObject : startArray;
+        startIndex = (startObject < startArray) ? startObject : startArray;
       } else if (startObject != -1) {
         startIndex = startObject;
-      } else {
+      } else if (startArray != -1) {
         startIndex = startArray;
       }
-      
+
       if (startIndex != -1) {
         body = body.substring(startIndex);
       }
     }
-    return jsonDecode(body);
+
+    try {
+      return jsonDecode(body);
+    } catch (e) {
+      print("CRITICAL ERROR: Failed to decode JSON. Body was: $body");
+      throw Exception("Invalid server response format");
+    }
   }
 
   // Helper function to get token
@@ -49,6 +58,8 @@ class AiApiService {
     String? businessType,
   }) async {
     try {
+      print("DEBUG: Calling Register URL: ${Uri.parse('$authUrl/register')}");
+      
       final response = await http.post(
         Uri.parse('$authUrl/register'),
         headers: {
@@ -59,16 +70,40 @@ class AiApiService {
           'name': name,
           'email': email,
           'password': password,
+          'password_confirmation': password, // مطلوب للباك-إند (Laravel confirmed rule)
           'role': role,
           'phone': phone,
           'business_type': businessType,
         }),
       );
 
+      print("DEBUG: Register Response Status: ${response.statusCode}");
+      print("DEBUG: Register Response Body: ${response.body}");
+
       if (response.statusCode == 201) {
-        final data = jsonDecode(response.body);
+        final data = _cleanAndDecode(response.body);
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('auth_token', data['token']);
+
+        // Save user profile locally
+        if (data['user'] != null) {
+          await LocalStorageService.saveUserProfile(
+            name: data['user']['name'] ?? name,
+            email: data['user']['email'] ?? email,
+            role: data['user']['role'] ?? role,
+            businessType: data['user']['business_type'] ?? businessType,
+            phone: data['user']['phone'] ?? phone,
+          );
+        } else {
+          await LocalStorageService.saveUserProfile(
+            name: name,
+            email: email,
+            role: role,
+            businessType: businessType,
+            phone: phone,
+          );
+        }
+
         return data;
       } else {
         String errorMsg = response.body;
@@ -92,6 +127,9 @@ class AiApiService {
     required String role,
   }) async {
     try {
+      print("DEBUG: Calling Login URL: ${Uri.parse('$authUrl/login')}");
+      print("DEBUG: Request Body: ${jsonEncode({'email': email, 'password': password, 'role': role})}");
+
       final response = await http.post(
         Uri.parse('$authUrl/login'),
         headers: {
@@ -105,10 +143,25 @@ class AiApiService {
         }),
       );
 
+      print("DEBUG: Login Response Status: ${response.statusCode}");
+      print("DEBUG: Login Response Body: ${response.body}");
+
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = _cleanAndDecode(response.body);
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('auth_token', data['token']);
+
+        // Save user profile locally
+        if (data['user'] != null) {
+          await LocalStorageService.saveUserProfile(
+            name: data['user']['name'],
+            email: data['user']['email'],
+            role: data['user']['role'],
+            businessType: data['user']['business_type'],
+            phone: data['user']['phone'],
+          );
+        }
+
         return data;
       } else {
         String errorMsg = response.body;
@@ -140,8 +193,7 @@ class AiApiService {
       );
 
       if (response.statusCode == 200) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove('auth_token');
+        await LocalStorageService.clearData();
         return true;
       } else {
         print("Error in logout: ${response.statusCode} - ${response.body}");
@@ -159,6 +211,11 @@ class AiApiService {
       var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/cv/gap-analysis'));
       request.headers['Accept'] = 'application/json';
       
+      final token = await getToken();
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
       request.fields['target_job'] = targetJob;
       if (manualText.isNotEmpty) {
         request.fields['manual_text'] = manualText;
@@ -186,9 +243,14 @@ class AiApiService {
   /// 2. Generate Roadmap
   static Future<Map<String, dynamic>?> generateRoadmap(String targetJob, List<String> missingSkills) async {
     try {
+      final token = await getToken();
       final response = await http.post(
         Uri.parse('$baseUrl/career/roadmap'),
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
         body: jsonEncode({
           'target_job': targetJob,
           'missing_skills': missingSkills,
@@ -207,17 +269,71 @@ class AiApiService {
     }
   }
 
+  /// 2b. Fetch Saved Roadmap
+  static Future<Map<String, dynamic>?> getActiveRoadmap() async {
+    try {
+      final token = await getToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/career/my-roadmap'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return _cleanAndDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      print("Exception in getActiveRoadmap: $e");
+      return null;
+    }
+  }
+
+  /// 2c. Update Progress
+  static Future<bool> updateRoadmapProgress(String skill) async {
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('$baseUrl/career/update-progress'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'skill': skill}),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Exception in updateProgress: $e");
+      return false;
+    }
+  }
+
   /// 3. Generate Quiz
   static Future<Map<String, dynamic>?> generateQuiz(List<String> skillsToTest) async {
     try {
+      final token = await getToken();
+      final url = '$baseUrl/career/quiz';
+      print("DEBUG: Fetching Quiz from $url");
+      print("DEBUG: Token: ${token?.substring(0, 10)}...");
+      
       final response = await http.post(
-        Uri.parse('$baseUrl/career/quiz'),
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json', 
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
         body: jsonEncode({
           'skills_to_test': skillsToTest,
         }),
       );
 
+      print("DEBUG: Quiz Response Status: ${response.statusCode}");
       if (response.statusCode == 200) {
         return _cleanAndDecode(response.body);
       } else {
@@ -233,9 +349,14 @@ class AiApiService {
   /// 4. Generate ATS CV
   static Future<String?> generateAtsCv(String userDataText, List<String> newSkills) async {
     try {
+      final token = await getToken();
       final response = await http.post(
         Uri.parse('$baseUrl/cv/generate'),
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/pdf'},
+        headers: {
+          'Content-Type': 'application/json', 
+          'Accept': 'application/pdf',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
         body: jsonEncode({
           'user_data_text': userDataText,
           'new_skills': newSkills,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/local_storage_service.dart';
+import '../services/ai_api_service.dart';
 import 'roadmap_screen.dart';
 
 class UserDashboard extends StatefulWidget {
@@ -14,7 +15,11 @@ class _UserDashboardState extends State<UserDashboard> {
   double matchScore = 0.0;
   List<String> acquiredSkills = [];
   List<String> missingSkills = [];
+  String userName = "Career Trainee";
   bool isLoading = true;
+
+  Map<String, dynamic>? activeRoadmap;
+  double roadmapProgress = 0.0;
 
   @override
   void initState() {
@@ -23,13 +28,48 @@ class _UserDashboardState extends State<UserDashboard> {
   }
 
   Future<void> _loadData() async {
-    final data = await LocalStorageService.getAnalysisData();
-    setState(() {
-      matchScore = data['matchScore'] ?? 0.0;
-      acquiredSkills = data['acquiredSkills'] ?? [];
-      missingSkills = data['missingSkills'] ?? [];
-      isLoading = false;
-    });
+    try {
+      final data = await LocalStorageService.getAnalysisData();
+      final profile = await LocalStorageService.getUserProfile();
+      
+      // جلب المسار النشط من السيرفر
+      final roadmapRes = await AiApiService.getActiveRoadmap();
+      
+      if (mounted) {
+        setState(() {
+          matchScore = data['matchScore'] ?? 0.0;
+          acquiredSkills = data['acquiredSkills'] ?? [];
+          missingSkills = data['missingSkills'] ?? [];
+          userName = profile['name'] ?? "Career Trainee";
+          
+          if (roadmapRes != null && roadmapRes['success'] == true) {
+            activeRoadmap = roadmapRes['data'];
+            _calculateRoadmapProgress();
+          } else {
+            activeRoadmap = null;
+          }
+          
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Dashboard Data Error: $e");
+      if (mounted) {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Sync Error: $e"), backgroundColor: Colors.orange),
+        );
+      }
+    }
+  }
+
+  void _calculateRoadmapProgress() {
+    if (activeRoadmap == null) return;
+    final total = (activeRoadmap!['missing_skills'] as List).length;
+    final completed = (activeRoadmap!['completed_skills'] as List).length;
+    if (total > 0) {
+      roadmapProgress = completed / total;
+    }
   }
 
   @override
@@ -39,25 +79,28 @@ class _UserDashboardState extends State<UserDashboard> {
       body: SafeArea(
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(context),
-                    const SizedBox(height: 24),
-                    _buildAiInsight(context),
-                    const SizedBox(height: 24),
-                    _buildStats(context),
-                    const SizedBox(height: 32),
-                    if (acquiredSkills.isNotEmpty || missingSkills.isNotEmpty)
-                      _buildSkillsProgress(),
-                    const SizedBox(height: 32),
-                    if (missingSkills.isNotEmpty)
+            : RefreshIndicator(
+                onRefresh: _loadData,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(context),
+                      const SizedBox(height: 24),
+                      _buildAiInsight(context),
+                      const SizedBox(height: 24),
+                      _buildStats(context),
+                      const SizedBox(height: 32),
                       _buildRoadmapSection(context),
-                    const SizedBox(height: 32),
-                    _buildActions(context),
-                  ],
+                      const SizedBox(height: 32),
+                      if (acquiredSkills.isNotEmpty || missingSkills.isNotEmpty)
+                        _buildSkillsProgress(),
+                      const SizedBox(height: 32),
+                      _buildActions(context),
+                    ],
+                  ),
                 ),
               ),
       ),
@@ -75,7 +118,7 @@ class _UserDashboardState extends State<UserDashboard> {
             const Text("Welcome back 👋", style: TextStyle(fontSize: 16, color: Colors.black54)),
             const SizedBox(height: 4),
             Text(
-              "Career Trainee",
+              userName,
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -267,45 +310,127 @@ class _UserDashboardState extends State<UserDashboard> {
     );
   }
 
-  // 🔹 Roadmap
+  // 🔹 Roadmap Section (Dynamic & Persistent)
   Widget _buildRoadmapSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Your Roadmap", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
+        const Text("Your Career Journey", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 16),
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
               ),
             ],
+            border: Border.all(color: Colors.grey.shade100),
           ),
-          child: Row(
-            children: [
-              const Icon(Icons.map, color: Colors.blue),
-              const SizedBox(width: 12),
-              const Expanded(child: Text("Continue your learning roadmap")),
-              IconButton(
-                icon: const Icon(Icons.arrow_forward),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => RoadmapScreen(
-                      targetJob: "Target Role", // Could be saved locally if needed
-                      missingSkills: missingSkills,
-                    )),
-                  );
-                },
-              )
-            ],
+          child: activeRoadmap != null 
+            ? _activeRoadmapContent(context)
+            : _emptyRoadmapContent(context),
+        ),
+      ],
+    );
+  }
+
+  Widget _activeRoadmapContent(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.rocket_launch_rounded, color: AppTheme.primaryColor),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    activeRoadmap!['target_job'] ?? "Career Path",
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  Text(
+                    "You are on the right track!",
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              "${(roadmapProgress * 100).toInt()}%",
+              style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: LinearProgressIndicator(
+            value: roadmapProgress,
+            minHeight: 8,
+            backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+            valueColor: const AlwaysStoppedAnimation(AppTheme.primaryColor),
           ),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => RoadmapScreen(
+                    targetJob: activeRoadmap!['target_job'],
+                    missingSkills: const [], // Fetch from server
+                  ),
+                ),
+              ).then((_) => _loadData());
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("Continue Learning"),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _emptyRoadmapContent(BuildContext context) {
+    return Column(
+      children: [
+        const Icon(Icons.map_outlined, size: 40, color: Colors.grey),
+        const SizedBox(height: 12),
+        const Text(
+          "No active roadmap yet",
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          "Upload your CV to generate your personalized career path",
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.grey, fontSize: 13),
+        ),
+        const SizedBox(height: 16),
+        TextButton(
+          onPressed: () => Navigator.pushNamed(context, '/uploadCV'),
+          child: const Text("Get Started Now"),
         )
       ],
     );

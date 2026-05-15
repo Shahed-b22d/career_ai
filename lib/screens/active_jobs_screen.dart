@@ -9,13 +9,7 @@ class ActiveJobsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text(
-          "Active Jobs",
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black87),
+        title: const Text("Active Job Posts"),
         actions: [
           IconButton(
             icon: const Icon(Icons.add_box_outlined, color: Color(0xFF0052FF)),

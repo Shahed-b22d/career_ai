@@ -4,6 +4,8 @@ import 'package:image_picker/image_picker.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_input_field.dart';
+import '../services/ai_api_service.dart';
+import '../services/local_storage_service.dart';
 
 class PersonProfile extends StatefulWidget {
   const PersonProfile({super.key});
@@ -42,6 +44,16 @@ class _PersonProfileState extends State<PersonProfile>
     ).animate(_controller);
 
     _controller.forward();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final profile = await LocalStorageService.getUserProfile();
+    setState(() {
+      nameController.text = profile['name'] ?? "";
+      emailController.text = profile['email'] ?? "";
+      phoneController.text = profile['phone'] ?? "";
+    });
   }
 
   @override
@@ -231,15 +243,18 @@ class _PersonProfileState extends State<PersonProfile>
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.red,
                                       ),
-                                      onPressed: () {
+                                      onPressed: () async {
                                         Navigator.pop(context);
-
-                                        Navigator.pushNamedAndRemoveUntil(
-                                          context,
-                                          '/login',
-                                          (route) => false,
-                                        );
+                                        await AiApiService.logout();
+                                        if (mounted) {
+                                          Navigator.pushNamedAndRemoveUntil(
+                                            context,
+                                            '/login',
+                                            (route) => false,
+                                          );
+                                        }
                                       },
+
                                       child: const Text("Logout"),
                                     ),
                                   ],

@@ -21,26 +21,62 @@ class _QuizScreenState extends State<QuizScreen> {
   int score = 0;
 
   List<Map<String, dynamic>> questions = [];
+  int _loadingTextIndex = 0;
+  final List<String> _loadingMessages = [
+    "Preparing your assessment...",
+    "Generating challenge questions...",
+    "Reviewing core concepts...",
+    "Setting up the test environment...",
+    "Get ready, starting now...",
+  ];
 
   @override
   void initState() {
     super.initState();
+    _startLoadingMessages();
     _fetchQuiz();
   }
 
-  Future<void> _fetchQuiz() async {
-    final response = await AiApiService.generateQuiz([widget.skillName]);
-    if (response != null && response['data'] != null && response['data']['quiz'] != null) {
-      final quizData = response['data']['quiz'] as List<dynamic>;
-      questions = quizData.map((q) => {
-        "question": q['question'] ?? "",
-        "options": q['options'] ?? [],
-        "answer": q['correct_answer'] ?? ""
-      }).toList();
-    }
-    setState(() {
-      isLoading = false;
+  void _startLoadingMessages() {
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted && isLoading) {
+        setState(() {
+          _loadingTextIndex = (_loadingTextIndex + 1) % _loadingMessages.length;
+        });
+        _startLoadingMessages();
+      }
     });
+  }
+
+  Future<void> _fetchQuiz() async {
+    print("DEBUG: QuizScreen - Starting fetch for ${widget.skillName}");
+    try {
+      final response = await AiApiService.generateQuiz([widget.skillName]);
+      if (response != null && response['data'] != null && response['data']['quiz'] != null) {
+        final quizData = response['data']['quiz'] as List<dynamic>;
+        if (quizData.isEmpty) {
+             _showError("AI returned an empty quiz. Please try again.");
+        } else {
+          questions = quizData.map((q) => {
+            "question": q['question'] ?? "",
+            "options": q['options'] ?? [],
+            "answer": q['correct_answer'] ?? ""
+          }).toList();
+        }
+      } else {
+        String errorMsg = response?['error'] ?? "Failed to generate quiz questions.";
+        _showError(errorMsg);
+      }
+    } catch (e) {
+      debugPrint("Quiz Fetch Error: $e");
+      _showError("Connection Error: $e");
+    }
+
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   void _nextQuestion() {
@@ -68,8 +104,53 @@ class _QuizScreenState extends State<QuizScreen> {
     if (isLoading) {
       return Scaffold(
         backgroundColor: AppTheme.backgroundColor,
-        appBar: AppBar(title: Text("${widget.skillName} Assessment"), flexibleSpace: Container(decoration: const BoxDecoration(gradient: AppTheme.primaryGradient)), foregroundColor: Colors.white),
-        body: const Center(child: CircularProgressIndicator()),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: const CircularProgressIndicator(
+                  strokeWidth: 3,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                ),
+              ),
+              const SizedBox(height: 32),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 500),
+                child: Text(
+                  _loadingMessages[_loadingTextIndex],
+                  key: ValueKey<int>(_loadingTextIndex),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey.shade700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                "Skill: ${widget.skillName}",
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.textSecondaryColor,
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
     
@@ -93,13 +174,9 @@ class _QuizScreenState extends State<QuizScreen> {
       appBar: AppBar(
         title: Text("${widget.skillName} Assessment"),
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
+          icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context, false),
         ),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
-        ),
-        foregroundColor: Colors.white,
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -269,5 +346,13 @@ class _QuizScreenState extends State<QuizScreen> {
         ),
       ),
     );
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+    Navigator.pop(context);
   }
 }

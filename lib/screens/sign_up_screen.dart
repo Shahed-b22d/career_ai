@@ -344,7 +344,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     if (result != null) {
                       Navigator.pushReplacementNamed(
                         context,
-                        selectedRole == "job" ? '/personProfile' : '/companyDashboard',
+                        selectedRole == "job" ? '/userDashboard' : '/companyDashboard',
                         arguments: {
                           "name": fullNameController.text,
                           "email": emailController.text,
