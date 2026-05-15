@@ -29,6 +29,7 @@ dependencies:
   url_launcher: ^6.3.0
   open_filex: ^4.5.2
   share_plus: ^10.1.2
+  lucide_icons_flutter: ^1.1.0
 
 
 dev_dependencies:

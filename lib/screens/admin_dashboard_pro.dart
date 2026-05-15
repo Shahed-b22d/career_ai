@@ -1,10 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../theme/app_theme.dart';
-
-const primary = Color(0xFF0052FF);
-const bg = Color(0xFFF8F9FA);
-const sidebarColor = Color(0xFF0A0F1C); // Very dark, professional sidebar
 
 class AdminDashboardPro extends StatefulWidget {
   const AdminDashboardPro({super.key});
@@ -13,120 +8,126 @@ class AdminDashboardPro extends StatefulWidget {
   State<AdminDashboardPro> createState() => _AdminDashboardProState();
 }
 
-class _AdminDashboardProState extends State<AdminDashboardPro> with SingleTickerProviderStateMixin {
-  int selected = 0;
-
-  // 🔥 AI SYSTEM DATA (Dummy data for UI)
-  List talentPool = [
-    {"name": "Ahmad Ali", "cv_status": "Analyzed", "score": 92, "roadmap": "Active"},
-    {"name": "Sara Jenkins", "cv_status": "Analyzed", "score": 88, "roadmap": "Active"},
-    {"name": "Lina Othman", "cv_status": "Pending AI", "score": 0, "roadmap": "None"},
-    {"name": "Omar K.", "cv_status": "Analyzed", "score": 75, "roadmap": "Completed"},
-  ];
-
-  List enterprises = [
-    {"name": "TechFlow Inc.", "jobs": 4, "matches_delivered": 120, "status": "Active"},
-    {"name": "Innovate AI", "jobs": 1, "matches_delivered": 15, "status": "Active"},
-    {"name": "Global Corp", "jobs": 0, "matches_delivered": 0, "status": "Pending Review"},
-  ];
-
-  List aiOperations = [
-    {"type": "CV Parsing (Gemini)", "user": "Lina Othman", "status": "Processing", "time": "2 sec ago"},
-    {"type": "Quiz Generation", "user": "Ahmad Ali", "status": "Success", "time": "5 mins ago"},
-    {"type": "Roadmap Creation", "user": "Sara Jenkins", "status": "Success", "time": "1 hour ago"},
-    {"type": "Job Matching Batch", "user": "System", "status": "Success", "time": "3 hours ago"},
-  ];
-
-  // 🔥 ANIMATION
-  late AnimationController c;
-  late Animation<double> fade;
-
-  @override
-  void initState() {
-    super.initState();
-    c = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
-    fade = Tween(begin: 0.0, end: 1.0).animate(c);
-    c.forward();
-  }
-
-  @override
-  void dispose() {
-    c.dispose();
-    super.dispose();
-  }
+class _AdminDashboardProState extends State<AdminDashboardPro> {
+  int _selectedIndex = 0;
+  bool _isLoggedIn = true; 
+  bool _isDark = true;
 
   @override
   Widget build(BuildContext context) {
+    final Color kPrimary = const Color(0xFF0052FF);
+    final Color kBg = _isDark ? const Color(0xFF0A0F1C) : const Color(0xFFF1F5F9);
+    final Color kCard = _isDark ? const Color(0xFF161B29) : Colors.white;
+    final Color kText = _isDark ? Colors.white : const Color(0xFF0A0F1C);
+
+    if (!_isLoggedIn) return _buildLoginPage(kBg, kCard, kPrimary, kText);
+
     return Scaffold(
-      backgroundColor: bg,
+      backgroundColor: kBg,
       body: Row(
         children: [
-          _buildSidebar(),
+          _buildSidebar(kCard, kPrimary, kText),
           Expanded(
-            child: FadeTransition(
-              opacity: fade,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return Align(
-                    alignment: Alignment.topCenter,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: 1200,
-                        maxHeight: constraints.maxHeight,
-                      ),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: constraints.maxHeight,
-                        child: Padding(
-                          padding: const EdgeInsets.all(32),
-                          child: _buildPageContent(),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+            child: Column(
+              children: [
+                _buildTopBar(kCard, kPrimary, kText),
+                Expanded(child: _buildBody(kText, kCard, kPrimary)),
+              ],
             ),
-          )
+          ),
         ],
       ),
     );
   }
 
-  // ================= SIDEBAR =================
-  Widget _buildSidebar() {
+  // --- التوب بار مع قائمة الإشعارات المنسدلة ---
+  Widget _buildTopBar(Color kCard, Color kPrimary, Color kText) {
+    return Container(
+      height: 70,
+      padding: const EdgeInsets.symmetric(horizontal: 25),
+      decoration: BoxDecoration(color: kCard, border: Border(bottom: BorderSide(color: kText.withOpacity(0.1)))),
+      child: Row(
+        children: [
+          Text("Admin Management Panel", style: TextStyle(color: kText.withOpacity(0.5))),
+          const Spacer(),
+          
+          // زر تفعيل الوضع المظلم
+          IconButton(
+            onPressed: () => setState(() => _isDark = !_isDark),
+            icon: Icon(_isDark ? Icons.light_mode : Icons.dark_mode, color: Colors.grey),
+          ),
+
+          const SizedBox(width: 10),
+
+          // قائمة الإشعارات المنسدلة (Dropdown)
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.notifications_none, color: Colors.grey),
+            offset: const Offset(0, 50),
+            color: kCard,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            onSelected: (value) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Selected: $value")));
+            },
+            itemBuilder: (BuildContext context) {
+              return [
+                _buildNotificationItem("New Company: TechNova", "2 min ago", Icons.business, kText),
+                _buildNotificationItem("Payment Received: \$50", "15 min ago", Icons.attach_money, kText),
+                _buildNotificationItem("New Complaint #14", "1 hour ago", Icons.warning_amber, kText),
+              ];
+            },
+          ),
+
+          const SizedBox(width: 15),
+          CircleAvatar(radius: 15, backgroundColor: kPrimary, child: const Icon(Icons.person, size: 18, color: Colors.white)),
+        ],
+      ),
+    );
+  }
+
+  PopupMenuItem<String> _buildNotificationItem(String title, String time, IconData icon, Color kText) {
+    return PopupMenuItem(
+      value: title,
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Colors.blueAccent),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: TextStyle(color: kText, fontSize: 13, fontWeight: FontWeight.w500)),
+              Text(time, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- القائمة الجانبية ---
+  Widget _buildSidebar(Color kCard, Color kPrimary, Color kText) {
     return Container(
       width: 250,
-      color: sidebarColor,
+      color: kCard,
       child: Column(
         children: [
           const SizedBox(height: 40),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: primary.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.admin_panel_settings, color: primary, size: 28),
-              ),
-              const SizedBox(width: 12),
-              const Text("AI Admin", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+              Icon(Icons.auto_awesome, color: kPrimary, size: 30),
+              const SizedBox(width: 10),
+              Text("CAREER AI", style: TextStyle(color: kText, fontWeight: FontWeight.bold, fontSize: 18)),
             ],
           ),
           const SizedBox(height: 40),
-          _buildSidebarItem(Icons.dashboard_rounded, "System Overview", 0),
-          _buildSidebarItem(Icons.people_alt_rounded, "Talent Pool", 1),
-          _buildSidebarItem(Icons.business_rounded, "Enterprises", 2),
-          _buildSidebarItem(Icons.memory_rounded, "AI Operations", 3),
+          _navItem(0, "Dashboard", Icons.dashboard_rounded, kPrimary, kText),
+          _navItem(1, "Verifications", Icons.fact_check_rounded, kPrimary, kText),
+          _navItem(2, "Talent Activity", Icons.groups_rounded, kPrimary, kText),
           const Spacer(),
-          const Divider(color: Colors.white24),
           ListTile(
-            leading: const Icon(Icons.logout, color: Colors.white54),
-            title: const Text("Logout", style: TextStyle(color: Colors.white54)),
-            onTap: () => Navigator.pushReplacementNamed(context, '/adminLogin'),
+            leading: const Icon(Icons.logout, color: Colors.redAccent),
+            title: const Text("Logout", style: TextStyle(color: Colors.redAccent)),
+            onTap: () => setState(() => _isLoggedIn = false),
           ),
           const SizedBox(height: 20),
         ],
@@ -134,354 +135,266 @@ class _AdminDashboardProState extends State<AdminDashboardPro> with SingleTicker
     );
   }
 
-  Widget _buildSidebarItem(IconData icon, String text, int index) {
-    bool isActive = selected == index;
-
-    return GestureDetector(
-      onTap: () {
-        setState(() => selected = index);
-        c.reset();
-        c.forward();
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-        decoration: BoxDecoration(
-          color: isActive ? primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: isActive
-              ? [BoxShadow(color: primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))]
-              : [],
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: isActive ? Colors.white : Colors.white54, size: 20),
-            const SizedBox(width: 16),
-            Text(
-              text,
-              style: TextStyle(
-                color: isActive ? Colors.white : Colors.white54,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                fontSize: 15,
-              ),
-            ),
-          ],
-        ),
-      ),
+  Widget _navItem(int index, String title, IconData icon, Color kPrimary, Color kText) {
+    bool isSelected = _selectedIndex == index;
+    return ListTile(
+      selected: isSelected,
+      selectedTileColor: kPrimary.withOpacity(0.1),
+      leading: Icon(icon, color: isSelected ? kPrimary : Colors.grey),
+      title: Text(title, style: TextStyle(color: isSelected ? kText : Colors.grey)),
+      onTap: () => setState(() => _selectedIndex = index),
     );
   }
 
-  // ================= ROUTER =================
-  Widget _buildPageContent() {
-    switch (selected) {
-      case 1:
-        return _buildTalentPoolPage();
-      case 2:
-        return _buildEnterprisesPage();
-      case 3:
-        return _buildAiOperationsPage();
-      default:
-        return _buildDashboardOverview();
+  Widget _buildBody(Color kText, Color kCard, Color kPrimary) {
+    switch (_selectedIndex) {
+      case 0: return _buildDashboardPage(kText, kCard, kPrimary);
+      case 1: return _buildVerificationsPage(kText, kCard, kPrimary);
+      case 2: return _buildTalentsPage(kText, kCard, kPrimary);
+      default: return _buildDashboardPage(kText, kCard, kPrimary);
     }
   }
 
-  // ================= DASHBOARD OVERVIEW =================
-  Widget _buildDashboardOverview() {
+  // --- الصفحة الأولى: المخططات ---
+  Widget _buildDashboardPage(Color kText, Color kCard, Color kPrimary) {
     return SingleChildScrollView(
+      padding: const EdgeInsets.all(25),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text("System Overview", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87)),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-                child: const Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.green, size: 16),
-                    SizedBox(width: 8),
-                    Text("System Healthy", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ),
+              _statCard("Revenue", "\$12,450", Icons.payments, Colors.green, kCard, kText),
+              const SizedBox(width: 20),
+              _statCard("Active Jobs", "450", Icons.work, kPrimary, kCard, kText),
+              const SizedBox(width: 20),
+              _statCard("Tickets", "14", Icons.warning, Colors.orange, kCard, kText),
             ],
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 25),
           Row(
             children: [
-              _buildKpiCard("CVs Parsed", "1,240", Icons.document_scanner, Colors.blue),
+              Expanded(child: _chartBox("Companies Growth (Bar Chart)", _buildBarChart(kPrimary), kCard, kText)),
               const SizedBox(width: 20),
-              _buildKpiCard("Active Jobs", "85", Icons.work, Colors.orange),
-              const SizedBox(width: 20),
-              _buildKpiCard("Successful Matches", "8,920", Icons.handshake, Colors.green),
-              const SizedBox(width: 20),
-              _buildKpiCard("API Calls (Today)", "4.2k", Icons.api, Colors.purple),
+              Expanded(child: _chartBox("Talents Stats (Pie Chart)", _buildPieChart(kPrimary), kCard, kText)),
             ],
           ),
-          const SizedBox(height: 32),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(flex: 2, child: _buildChartBox("AI Match Rate vs Direct Apply", _buildLineChart())),
-              const SizedBox(width: 24),
-              Expanded(child: _buildChartBox("Talent Skill Distribution", _buildPieChart())),
-            ],
-          ),
+          const SizedBox(height: 25),
+          _buildComplaintsList(kCard, kText, kPrimary),
         ],
       ),
     );
   }
 
-  Widget _buildKpiCard(String title, String value, IconData icon, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 15, offset: const Offset(0, 5))],
-        ),
+  // --- الصفحة الثانية: الجداول والأزرار ---
+  Widget _buildVerificationsPage(Color kText, Color kCard, Color kPrimary) {
+    return Padding(
+      padding: const EdgeInsets.all(25),
+      child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 20),
-            Text(value, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87)),
-            const SizedBox(height: 4),
-            Text(title, style: const TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.w500)),
+            Text("Company Registration (CR)", style: TextStyle(color: kText, fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 15),
+            _buildVerificationTable(kCard, kText),
+            const SizedBox(height: 40),
+            Text("Job Post Payments", style: TextStyle(color: kText, fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 15),
+            _buildPaymentTable(kCard, kText),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildChartBox(String title, Widget chartContent) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 15, offset: const Offset(0, 5))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
-          const SizedBox(height: 32),
-          SizedBox(height: 220, child: chartContent),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLineChart() {
-    return LineChart(
-      LineChartData(
-        gridData: FlGridData(show: true, drawVerticalLine: false, horizontalInterval: 2, getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.withOpacity(0.1), strokeWidth: 1)),
-        titlesData: FlTitlesData(
-          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 22, interval: 1, getTitlesWidget: (v, m) => Text('W${v.toInt()+1}', style: const TextStyle(color: Colors.black54, fontSize: 10)))),
-          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        ),
-        borderData: FlBorderData(show: false),
-        lineBarsData: [
-          LineChartBarData(
-            spots: const [FlSpot(0, 3), FlSpot(1, 4), FlSpot(2, 5), FlSpot(3, 8), FlSpot(4, 7), FlSpot(5, 10)],
-            isCurved: true,
-            color: Colors.green,
-            barWidth: 4,
-            isStrokeCapRound: true,
-            dotData: FlDotData(show: false),
-            belowBarData: BarAreaData(show: true, color: Colors.green.withOpacity(0.1)),
-          ),
-          LineChartBarData(
-            spots: const [FlSpot(0, 2), FlSpot(1, 2.5), FlSpot(2, 2.2), FlSpot(3, 3), FlSpot(4, 2.8), FlSpot(5, 3.5)],
-            isCurved: true,
-            color: Colors.grey.withOpacity(0.5),
-            barWidth: 3,
-            isStrokeCapRound: true,
-            dotData: FlDotData(show: false),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPieChart() {
-    return PieChart(
-      PieChartData(
-        sectionsSpace: 2,
-        centerSpaceRadius: 50,
-        sections: [
-          PieChartSectionData(value: 40, color: Colors.blue, title: 'Frontend', radius: 40, titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
-          PieChartSectionData(value: 30, color: Colors.purple, title: 'Backend', radius: 40, titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
-          PieChartSectionData(value: 15, color: Colors.orange, title: 'UI/UX', radius: 40, titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
-          PieChartSectionData(value: 15, color: Colors.green, title: 'Data', radius: 40, titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
-        ],
-      ),
-    );
-  }
-
-  // ================= TALENT POOL =================
-  Widget _buildTalentPoolPage() {
-    return _buildDataTableContainer(
-      "Talent Pool",
-      "Manage job seekers and their AI evaluation status",
-      DataTable(
-        headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
-        columns: const [
-          DataColumn(label: Text("Candidate Name")),
-          DataColumn(label: Text("CV AI Status")),
-          DataColumn(label: Text("AI Score")),
-          DataColumn(label: Text("Roadmap")),
-          DataColumn(label: Text("Action")),
-        ],
-        rows: talentPool.map((u) {
-          bool isAnalyzed = u["cv_status"] == "Analyzed";
-          return DataRow(cells: [
-            DataCell(Text(u["name"], style: const TextStyle(fontWeight: FontWeight.bold))),
-            DataCell(
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: isAnalyzed ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-                child: Text(u["cv_status"], style: TextStyle(color: isAnalyzed ? Colors.green : Colors.orange, fontSize: 12)),
-              ),
-            ),
-            DataCell(Text(u["score"].toString(), style: TextStyle(fontWeight: FontWeight.bold, color: u["score"] > 80 ? Colors.green : Colors.black87))),
-            DataCell(Text(u["roadmap"])),
-            DataCell(IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.red),
-              onPressed: () {
-                setState(() => talentPool.remove(u));
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Candidate removed")));
-              },
-            )),
-          ]);
-        }).toList(),
-      ),
-    );
-  }
-
-  // ================= ENTERPRISES =================
-  Widget _buildEnterprisesPage() {
-    return _buildDataTableContainer(
-      "Enterprises & Companies",
-      "Monitor company job postings and AI matching delivery",
-      DataTable(
-        headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
-        columns: const [
-          DataColumn(label: Text("Company Name")),
-          DataColumn(label: Text("Active Jobs")),
-          DataColumn(label: Text("Matches Delivered")),
-          DataColumn(label: Text("Status")),
-          DataColumn(label: Text("Action")),
-        ],
-        rows: enterprises.map((c) {
-          bool isActive = c["status"] == "Active";
-          return DataRow(cells: [
-            DataCell(Text(c["name"], style: const TextStyle(fontWeight: FontWeight.bold))),
-            DataCell(Text(c["jobs"].toString())),
-            DataCell(Text(c["matches_delivered"].toString(), style: const TextStyle(color: primary, fontWeight: FontWeight.bold))),
-            DataCell(
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: isActive ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-                child: Text(c["status"], style: TextStyle(color: isActive ? Colors.green : Colors.orange, fontSize: 12)),
-              ),
-            ),
-            DataCell(Row(
-              children: [
-                if (!isActive)
-                  IconButton(
-                    icon: const Icon(Icons.check_circle_outline, color: Colors.green),
-                    onPressed: () => setState(() => c["status"] = "Active"),
-                  ),
-                IconButton(
-                  icon: const Icon(Icons.block, color: Colors.red),
-                  onPressed: () {
-                    setState(() => enterprises.remove(c));
-                  },
-                ),
-              ],
-            )),
-          ]);
-        }).toList(),
-      ),
-    );
-  }
-
-  // ================= AI OPERATIONS =================
-  Widget _buildAiOperationsPage() {
-    return _buildDataTableContainer(
-      "AI Operations Log",
-      "Live feed of Gemini API usage, parsing, and matching tasks",
-      DataTable(
-        headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
-        columns: const [
-          DataColumn(label: Text("Task Type")),
-          DataColumn(label: Text("Target User/Entity")),
-          DataColumn(label: Text("Status")),
-          DataColumn(label: Text("Time")),
-        ],
-        rows: aiOperations.map((op) {
-          bool isSuccess = op["status"] == "Success";
-          return DataRow(cells: [
-            DataCell(Row(
-              children: [
-                Icon(Icons.memory, size: 16, color: Colors.purple.withOpacity(0.6)),
-                const SizedBox(width: 8),
-                Text(op["type"], style: const TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            )),
-            DataCell(Text(op["user"])),
-            DataCell(
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: isSuccess ? Colors.green.withOpacity(0.1) : Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-                child: Text(op["status"], style: TextStyle(color: isSuccess ? Colors.green : Colors.blue, fontSize: 12)),
-              ),
-            ),
-            DataCell(Text(op["time"], style: const TextStyle(color: Colors.black54))),
-          ]);
-        }).toList(),
-      ),
-    );
-  }
-
-  // ================= HELPER =================
-  Widget _buildDataTableContainer(String title, String subtitle, Widget dataTable) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildTalentsPage(Color kText, Color kCard, Color kPrimary) {
+    return ListView(
+      padding: const EdgeInsets.all(25),
       children: [
-        Text(title, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87)),
-        const SizedBox(height: 4),
-        Text(subtitle, style: const TextStyle(fontSize: 14, color: Colors.black54)),
-        const SizedBox(height: 32),
-        Expanded(
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 15, offset: const Offset(0, 5))],
-            ),
-            child: SingleChildScrollView(
-              child: Theme(
-                data: Theme.of(context).copyWith(dividerColor: Colors.grey.withOpacity(0.1)),
-                child: dataTable,
-              ),
-            ),
+        _talentActivityTile("Ahmad M.", "Uploaded CV", "Now", Icons.description, kCard, kText, kPrimary),
+        _talentActivityTile("Sara K.", "Roadmap Done", "1h ago", Icons.map, kCard, kText, kPrimary),
+      ],
+    );
+  }
+
+  Widget _buildVerificationTable(Color kCard, Color kText) {
+    return Container(
+      decoration: BoxDecoration(color: kCard, borderRadius: BorderRadius.circular(15)),
+      child: Table(
+        children: [
+          _tableHeader(["Company", "License", "Status", "Actions"]),
+          _companyRow("TechNova", "Pending", kText),
+          _companyRow("Future Soft", "Pending", kText),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentTable(Color kCard, Color kText) {
+    return Container(
+      decoration: BoxDecoration(color: kCard, borderRadius: BorderRadius.circular(15)),
+      child: Table(
+        children: [
+          _tableHeader(["Job Title", "Amount", "Ref", "Action"]),
+          _paymentRow("Flutter Dev", "\$50", "REF-9920", kText),
+        ],
+      ),
+    );
+  }
+
+  TableRow _tableHeader(List<String> cols) => TableRow(
+    children: cols.map((c) => Padding(padding: const EdgeInsets.all(15), child: Text(c, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)))).toList()
+  );
+
+  TableRow _companyRow(String name, String status, Color kText) => TableRow(
+    children: [
+      _cell(name, kText),
+      TextButton.icon(
+        onPressed: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Opening PDF for $name..."))), 
+        icon: const Icon(Icons.picture_as_pdf, size: 18), 
+        label: const Text("View PDF")
+      ),
+      _cell(status, kText),
+      Row(
+        children: [
+          IconButton(
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$name Verified ✅"))), 
+            icon: const Icon(Icons.check_circle, color: Colors.green)
+          ),
+          IconButton(
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$name Rejected ❌"))), 
+            icon: const Icon(Icons.cancel, color: Colors.red)
+          ),
+        ],
+      ),
+    ]
+  );
+
+  TableRow _paymentRow(String title, String amount, String ref, Color kText) => TableRow(
+    children: [
+      _cell(title, kText), _cell(amount, kText), _cell(ref, kText),
+     Padding(
+  padding: const EdgeInsets.all(8.0),
+  child: Align(
+    alignment: Alignment.centerLeft,
+    child: SizedBox(
+      width: 90,
+      height: 32,
+      child: ElevatedButton(
+        onPressed: () {},
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blueAccent,
+          padding: EdgeInsets.zero,
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
           ),
         ),
-      ],
+        child: const Text(
+          "Confirm",
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    ),
+  ),
+),
+    ]
+  );
+
+  Widget _cell(String text, Color kText) => Padding(padding: const EdgeInsets.all(15), child: Text(text, style: TextStyle(color: kText)));
+
+  Widget _buildBarChart(Color color) => BarChart(BarChartData(
+    gridData: FlGridData(show: false),
+    titlesData: FlTitlesData(show: false),
+    borderData: FlBorderData(show: false),
+    barGroups: List.generate(7, (i) => BarChartGroupData(x: i, barRods: [BarChartRodData(toY: (i + 2) * 5, color: color, width: 16)]))
+  ));
+
+  Widget _buildPieChart(Color color) => PieChart(PieChartData(sections: [
+    PieChartSectionData(color: color, value: 60, title: '60%', radius: 40, titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+    PieChartSectionData(color: Colors.orange, value: 40, title: '40%', radius: 40, titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+  ]));
+
+  Widget _statCard(String title, String val, IconData icon, Color color, Color kCard, Color kText) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(color: kCard, borderRadius: BorderRadius.circular(20)),
+        child: Row(children: [
+          Icon(icon, color: color, size: 30),
+          const SizedBox(width: 15),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(val, style: TextStyle(color: kText, fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+          ])
+        ]),
+      ),
+    );
+  }
+
+  Widget _chartBox(String title, Widget chart, Color kCard, Color kText) {
+    return Container(
+      height: 300,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: kCard, borderRadius: BorderRadius.circular(20)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: TextStyle(color: kText, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 20),
+        Expanded(child: chart),
+      ]),
+    );
+  }
+
+  Widget _buildComplaintsList(Color kCard, Color kText, Color kPrimary) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: kCard, borderRadius: BorderRadius.circular(20)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text("Recent Complaints", style: TextStyle(color: kText, fontWeight: FontWeight.bold)),
+        const Divider(height: 30),
+        _complaintItem("User #12", "Roadmap bug", kPrimary, kText),
+      ]),
+    );
+  }
+
+  Widget _complaintItem(String user, String msg, Color kPrimary, Color kText) => ListTile(
+    title: Text(user, style: TextStyle(color: kPrimary, fontWeight: FontWeight.bold)),
+    subtitle: Text(msg, style: TextStyle(color: kText.withOpacity(0.6))),
+  );
+
+  Widget _talentActivityTile(String name, String action, String time, IconData icon, Color kCard, Color kText, Color kPrimary) => Container(
+    margin: const EdgeInsets.only(bottom: 10),
+    decoration: BoxDecoration(color: kCard, borderRadius: BorderRadius.circular(15)),
+    child: ListTile(
+      leading: Icon(icon, color: kPrimary),
+      title: Text(name, style: TextStyle(color: kText, fontWeight: FontWeight.bold)),
+      subtitle: Text(action, style: const TextStyle(color: Colors.grey)),
+      trailing: Text(time, style: TextStyle(color: kText.withOpacity(0.3))),
+    ),
+  );
+
+  Widget _buildLoginPage(Color kBg, Color kCard, Color kPrimary, Color kText) {
+    return Scaffold(
+      backgroundColor: kBg,
+      body: Center(
+        child: Container(
+          width: 350,
+          padding: const EdgeInsets.all(40),
+          decoration: BoxDecoration(color: kCard, borderRadius: BorderRadius.circular(20)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.auto_awesome, color: kPrimary, size: 50),
+              const SizedBox(height: 30),
+              ElevatedButton(onPressed: () => setState(() => _isLoggedIn = true), child: const Text("Login")),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
