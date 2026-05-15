@@ -78,16 +78,6 @@ class _CvAnalysisScreenState extends State<CvAnalysisScreen> with SingleTickerPr
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         title: const Text("Data Analysis"),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: AppTheme.primaryGradient,
-          ),
-        ),
-        foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),

@@ -1,15 +1,42 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../services/local_storage_service.dart';
 
-class CompanyDashboard extends StatelessWidget {
+class CompanyDashboard extends StatefulWidget {
   const CompanyDashboard({super.key});
+
+  @override
+  State<CompanyDashboard> createState() => _CompanyDashboardState();
+}
+
+class _CompanyDashboardState extends State<CompanyDashboard> {
+  String companyName = "Tech Innovators Inc.";
+  String businessType = "Technology";
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final profile = await LocalStorageService.getUserProfile();
+    setState(() {
+      companyName = profile['name'] ?? "Tech Innovators Inc.";
+      businessType = profile['businessType'] ?? "Technology";
+      isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // Very light gray background
+      backgroundColor: const Color(0xFFF8F9FA),
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: isLoading 
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,7 +90,7 @@ class CompanyDashboard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  "Tech Innovators Inc.",
+                  companyName,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -134,8 +161,8 @@ class CompanyDashboard extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
+              children: [
+                const Text(
                   "AI Talent Insight",
                   style: TextStyle(
                     color: Colors.white,
@@ -143,10 +170,10 @@ class CompanyDashboard extends StatelessWidget {
                     fontSize: 16,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                  "We found 3 perfect matches for your Senior UI/UX Designer role.",
-                  style: TextStyle(
+                  "We found 3 perfect matches for your ${businessType} roles.",
+                  style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 13,
                     height: 1.4,
@@ -236,7 +263,6 @@ class CompanyDashboard extends StatelessWidget {
         const SizedBox(height: 16),
         SizedBox(
           height: 180,
-          // Negative horizontal margin hack to allow scrolling to edges without cutting shadows
           child: ListView(
             clipBehavior: Clip.none,
             scrollDirection: Axis.horizontal,
@@ -436,3 +462,4 @@ class CompanyDashboard extends StatelessWidget {
     );
   }
 }
+

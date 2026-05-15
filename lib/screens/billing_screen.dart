@@ -10,13 +10,7 @@ class BillingScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text(
-          "Billing & Subscriptions",
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black87),
+        title: const Text("Billing & Subscriptions"),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),

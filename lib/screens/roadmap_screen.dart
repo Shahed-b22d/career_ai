@@ -20,33 +20,71 @@ class _RoadmapScreenState extends State<RoadmapScreen> {
   List<Map<String, dynamic>> roadmapSteps = [];
   bool isLoading = true;
   String fullRoadmapText = "";
+  
+  int _loadingTextIndex = 0;
+  final List<String> _loadingMessages = [
+    "Analyzing your career goals...",
+    "Finding the best courses...",
+    "Designing your skill path...",
+    "Mapping out your future steps...",
+    "Consulting AI Mentors...",
+  ];
 
   @override
   void initState() {
     super.initState();
+    _startLoadingMessages();
     _fetchRoadmap();
   }
 
-  Future<void> _fetchRoadmap() async {
-    final response = await AiApiService.generateRoadmap(widget.targetJob, widget.missingSkills);
-    if (response != null && response['data'] != null) {
-      final data = response['data'];
-      fullRoadmapText = data['roadmap'] ?? "";
-      
-      final skillsCourses = data['skills_courses'] as List<dynamic>?;
-      if (skillsCourses != null) {
-        roadmapSteps = skillsCourses.map((sc) => {
-          "title": sc['skill'] ?? "Unknown Skill",
-          "description": "Master this skill by exploring the recommended free courses.",
-          "courses": sc['courses'] ?? [],
-          "duration": "Self-paced",
-          "isCompleted": false,
-        }).toList();
+  void _startLoadingMessages() {
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted && isLoading) {
+        setState(() {
+          _loadingTextIndex = (_loadingTextIndex + 1) % _loadingMessages.length;
+        });
+        _startLoadingMessages();
       }
-    }
-    setState(() {
-      isLoading = false;
     });
+  }
+
+  Future<void> _fetchRoadmap() async {
+    try {
+      Map<String, dynamic>? response;
+      if (widget.missingSkills.isEmpty) {
+        response = await AiApiService.getActiveRoadmap();
+      } else {
+        response = await AiApiService.generateRoadmap(widget.targetJob, widget.missingSkills);
+      }
+
+      if (response != null && response['data'] != null) {
+        final data = response['data'];
+        fullRoadmapText = data['roadmap'] ?? "";
+        final completedSkills = data['completed_skills'] as List<dynamic>? ?? [];
+        
+        final skillsCourses = data['skills_courses'] as List<dynamic>?;
+        if (skillsCourses != null) {
+          roadmapSteps = skillsCourses.map((sc) {
+            final skill = sc['skill'] ?? "Unknown Skill";
+            return {
+              "title": skill,
+              "description": "Master this skill by exploring the recommended free courses.",
+              "courses": sc['courses'] ?? [],
+              "duration": "Self-paced",
+              "isCompleted": completedSkills.contains(skill),
+            };
+          }).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint("Roadmap Fetch Error: $e");
+    }
+
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   double get _progressPercentage {
@@ -224,11 +262,13 @@ class _RoadmapScreenState extends State<RoadmapScreen> {
     );
 
     if (result == true) {
+      // حفظ التقدم في السيرفر
+      await AiApiService.updateRoadmapProgress(skillName);
+      
       setState(() {
         roadmapSteps[index]["isCompleted"] = true;
       });
       
-      // Optional: Show success snackbar
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -258,7 +298,47 @@ class _RoadmapScreenState extends State<RoadmapScreen> {
         ),
         foregroundColor: Colors.white,
       ),
-      body: isLoading ? const Center(child: CircularProgressIndicator()) : Column(
+      body: isLoading 
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryColor.withOpacity(0.1),
+                          blurRadius: 20,
+                          spreadRadius: 5,
+                        ),
+                      ],
+                    ),
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 500),
+                    child: Text(
+                      _loadingMessages[_loadingTextIndex],
+                      key: ValueKey<int>(_loadingTextIndex),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ) 
+          : Column(
         children: [
           // Progress Header
           Container(
