@@ -6,9 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'local_storage_service.dart';
 
 class AiApiService {
-  // Base URL for Real Device pointing to Localhost via ADB Reverse
-  static const String baseUrl = 'http://localhost:8000/api/ai';
-  static const String authUrl = 'http://localhost:8000/api/auth';
+  // Base URL for Android Emulator pointing to Localhost
+  static const String baseUrl = 'http://10.0.2.2:8000/api/ai';
+  static const String authUrl = 'http://10.0.2.2:8000/api/auth';
 
   /// دالة مساعدة لتنظيف الردود القادمة من السيرفر من أي تحذيرات (PHP Warnings)
   static dynamic _cleanAndDecode(String body) {
@@ -56,26 +56,49 @@ class AiApiService {
     required String role,
     String? phone,
     String? businessType,
+    File? commercialRegisterFile,
   }) async {
     try {
       print("DEBUG: Calling Register URL: ${Uri.parse('$authUrl/register')}");
       
-      final response = await http.post(
-        Uri.parse('$authUrl/register'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode({
-          'name': name,
-          'email': email,
-          'password': password,
-          'password_confirmation': password, // مطلوب للباك-إند (Laravel confirmed rule)
-          'role': role,
-          'phone': phone,
-          'business_type': businessType,
-        }),
-      );
+      http.Response response;
+
+      if (commercialRegisterFile != null) {
+        var request = http.MultipartRequest('POST', Uri.parse('$authUrl/register'));
+        request.headers['Accept'] = 'application/json';
+        request.fields['name'] = name;
+        request.fields['email'] = email;
+        request.fields['password'] = password;
+        request.fields['password_confirmation'] = password;
+        request.fields['role'] = role;
+        if (phone != null) request.fields['phone'] = phone;
+        if (businessType != null) request.fields['business_type'] = businessType;
+
+        request.files.add(await http.MultipartFile.fromPath(
+          'commercial_register_file', 
+          commercialRegisterFile.path
+        ));
+
+        var streamedResponse = await request.send();
+        response = await http.Response.fromStream(streamedResponse);
+      } else {
+        response = await http.post(
+          Uri.parse('$authUrl/register'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: jsonEncode({
+            'name': name,
+            'email': email,
+            'password': password,
+            'password_confirmation': password, // مطلوب للباك-إند (Laravel confirmed rule)
+            'role': role,
+            'phone': phone,
+            'business_type': businessType,
+          }),
+        );
+      }
 
       print("DEBUG: Register Response Status: ${response.statusCode}");
       print("DEBUG: Register Response Body: ${response.body}");
