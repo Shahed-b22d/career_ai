@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
+
 import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_input_field.dart';
@@ -20,12 +23,31 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
   final businessTypeController = TextEditingController();
+  final otherBusinessTypeController = TextEditingController();
 
   bool passwordVisible = false;
   bool confirmPasswordVisible = false;
   bool termsAccepted = false;
 
   String selectedRole = "job";
+  String? selectedBusinessType;
+
+  File? commercialRegisterFile;
+
+  final List<String> companyTypes = [
+    "Technology / IT",
+    "E-commerce",
+    "Finance / Banking",
+    "Healthcare",
+    "Education",
+    "Construction",
+    "Real Estate",
+    "Marketing / Advertising",
+    "Manufacturing",
+    "Transport & Logistics",
+    "Hospitality & Tourism",
+    "Other",
+  ];
 
   @override
   void dispose() {
@@ -35,6 +57,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     passwordController.dispose();
     confirmPasswordController.dispose();
     businessTypeController.dispose();
+    otherBusinessTypeController.dispose();
     super.dispose();
   }
 
@@ -50,10 +73,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
       try {
         googleUser = await GoogleSignIn.instance.authenticate();
       } catch (e) {
-        if (mounted) Navigator.pop(context); // User cancelled or error
+        if (mounted) Navigator.pop(context);
         return;
       }
-      
+
       if (googleUser == null) {
         if (mounted) Navigator.pop(context);
         return;
@@ -67,16 +90,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
       await FirebaseAuth.instance.signInWithCredential(credential);
 
       if (mounted) {
-        Navigator.pop(context); // Close loading dialog
+        Navigator.pop(context);
         if (selectedRole == 'company') {
           Navigator.pushReplacementNamed(context, '/companyDashboard');
         } else {
-          Navigator.pushReplacementNamed(context, '/userDashboard'); // تجاوز الإعدادات حالياً
+          Navigator.pushReplacementNamed(context, '/userDashboard');
         }
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context); // Close loading dialog
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Google Sign-In failed: $e"),
@@ -84,7 +107,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ),
         );
       }
-      debugPrint("Google Sign In Error: $e");
     }
   }
 
@@ -110,7 +132,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
             color: isSelected ? null : AppTheme.cardColor,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isSelected ? Colors.transparent : Colors.grey.withOpacity(0.2),
+              color: isSelected
+                  ? Colors.transparent
+                  : Colors.grey.withOpacity(0.2),
               width: 1.5,
             ),
             boxShadow: [
@@ -136,7 +160,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
-                    color: isSelected ? Colors.white : AppTheme.textPrimaryColor,
+                    color:
+                        isSelected
+                            ? Colors.white
+                            : AppTheme.textPrimaryColor,
                   ),
                 ),
               ),
@@ -172,6 +199,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
       showError("Accept terms first");
       return false;
     }
+    if (selectedRole == "company" && commercialRegisterFile == null) {
+      showError("Upload commercial register");
+      return false;
+    }
     return true;
   }
 
@@ -191,7 +222,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+          onPressed: () =>
+              Navigator.pushReplacementNamed(context, '/login'),
         ),
       ),
       body: SafeArea(
@@ -229,6 +261,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                 ],
               ),
+
               const SizedBox(height: 30),
 
               CustomInputField(
@@ -255,10 +288,68 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
               if (selectedRole == "company") ...[
                 const SizedBox(height: 16),
-                CustomInputField(
-                  hint: "Business Type",
-                  icon: Icons.work_outline_rounded,
-                  controller: businessTypeController,
+
+                DropdownButtonFormField<String>(
+                  value: selectedBusinessType,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.work_outline_rounded),
+                    hintText: "Select Business Type",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  items:
+                      companyTypes.map((type) {
+                        return DropdownMenuItem(
+                          value: type,
+                          child: Text(type),
+                        );
+                      }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedBusinessType = value;
+                    });
+                  },
+                ),
+
+                if (selectedBusinessType == "Other") ...[
+                  const SizedBox(height: 12),
+                  CustomInputField(
+                    hint: "Enter your business type",
+                    icon: Icons.edit_outlined,
+                    controller: otherBusinessTypeController,
+                  ),
+                ],
+
+                const SizedBox(height: 16),
+
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    FilePickerResult? result =
+                        await FilePicker.platform.pickFiles(
+                          type: FileType.custom,
+                          allowedExtensions: [
+                            'pdf',
+                            'png',
+                            'jpg',
+                            'jpeg',
+                          ],
+                        );
+
+                    if (result != null) {
+                      setState(() {
+                        commercialRegisterFile = File(
+                          result.files.single.path!,
+                        );
+                      });
+                    }
+                  },
+                  icon: const Icon(Icons.upload_file),
+                  label: Text(
+                    commercialRegisterFile == null
+                        ? "Upload Commercial Register"
+                        : "File Selected ✓",
+                  ),
                 ),
               ],
 
@@ -276,6 +367,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   });
                 },
               ),
+
               const SizedBox(height: 16),
 
               CustomInputField(
@@ -290,32 +382,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   });
                 },
               ),
+
               const SizedBox(height: 20),
 
               Row(
                 children: [
                   Checkbox(
                     value: termsAccepted,
-                    activeColor: AppTheme.primaryColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
-                    ),
                     onChanged: (value) {
                       setState(() {
                         termsAccepted = value ?? false;
                       });
                     },
                   ),
-                  Expanded(
+                  const Expanded(
                     child: Text(
                       "I agree to the Terms of Service & Privacy Policy",
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontSize: 13,
-                      ),
                     ),
                   ),
                 ],
               ),
+
               const SizedBox(height: 30),
 
               CustomButton(
@@ -326,7 +413,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   showDialog(
                     context: context,
                     barrierDismissible: false,
-                    builder: (context) => const Center(child: CircularProgressIndicator()),
+                    builder:
+                        (context) =>
+                            const Center(child: CircularProgressIndicator()),
                   );
 
                   try {
@@ -336,65 +425,30 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       password: passwordController.text,
                       role: selectedRole,
                       phone: phoneController.text.trim(),
-                      businessType: selectedRole == 'company' ? businessTypeController.text.trim() : null,
+                      businessType:
+                          selectedRole == 'company'
+                              ? (selectedBusinessType == "Other"
+                                  ? otherBusinessTypeController.text
+                                  : selectedBusinessType)
+                              : null,
                     );
 
-                    if (mounted) Navigator.pop(context); // close dialog
+                    if (mounted) Navigator.pop(context);
 
                     if (result != null) {
                       Navigator.pushReplacementNamed(
                         context,
-                        selectedRole == "job" ? '/userDashboard' : '/companyDashboard',
-                        arguments: {
-                          "name": fullNameController.text,
-                          "email": emailController.text,
-                          "phone": phoneController.text,
-                          "businessType": businessTypeController.text,
-                        },
+                        selectedRole == "job"
+                            ? '/userDashboard'
+                            : '/companyDashboard',
                       );
                     }
                   } catch (e) {
-                    if (mounted) Navigator.pop(context); // close dialog
+                    if (mounted) Navigator.pop(context);
                     showError(e.toString());
                   }
                 },
               ),
-              const SizedBox(height: 30),
-
-              Row(
-                children: [
-                  Expanded(child: Divider(color: Colors.grey.shade300)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      "OR",
-                      style: TextStyle(color: AppTheme.textSecondaryColor, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Expanded(child: Divider(color: Colors.grey.shade300)),
-                ],
-              ),
-              const SizedBox(height: 25),
-
-              OutlinedButton.icon(
-                onPressed: () async {
-                  await signInWithGoogle();
-                },
-                icon: Image.asset('assets/icons/google.png', width: 24, height: 24),
-                label: const Text(
-                  "Continue with Google",
-                  style: TextStyle(fontSize: 16, color: AppTheme.textPrimaryColor),
-                ),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 55),
-                  backgroundColor: Colors.white,
-                  side: BorderSide(color: Colors.grey.shade300),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 40),
             ],
           ),
         ),
