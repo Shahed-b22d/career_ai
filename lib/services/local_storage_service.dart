@@ -14,7 +14,7 @@ class LocalStorageService {
   static const String _keyUserPhone = "user_phone";
 
   // --- Profile Methods ---
-  
+
   static Future<void> saveUserProfile({
     required String name,
     required String email,
@@ -70,10 +70,12 @@ class LocalStorageService {
   static Future<Map<String, dynamic>> getAnalysisData() async {
     final prefs = await SharedPreferences.getInstance();
     final suffix = await _getSuffix();
-    
+
     double score = prefs.getDouble("${_keyMatchScore}_$suffix") ?? 0.0;
-    List<String> acquired = prefs.getStringList("${_keyAcquiredSkills}_$suffix") ?? [];
-    List<String> missing = prefs.getStringList("${_keyMissingSkills}_$suffix") ?? [];
+    List<String> acquired =
+        prefs.getStringList("${_keyAcquiredSkills}_$suffix") ?? [];
+    List<String> missing =
+        prefs.getStringList("${_keyMissingSkills}_$suffix") ?? [];
 
     return {
       'matchScore': score,
@@ -86,15 +88,17 @@ class LocalStorageService {
   static Future<void> acquireSkill(String skill) async {
     final prefs = await SharedPreferences.getInstance();
     final suffix = await _getSuffix();
-    
-    List<String> acquired = prefs.getStringList("${_keyAcquiredSkills}_$suffix") ?? [];
-    List<String> missing = prefs.getStringList("${_keyMissingSkills}_$suffix") ?? [];
+
+    List<String> acquired =
+        prefs.getStringList("${_keyAcquiredSkills}_$suffix") ?? [];
+    List<String> missing =
+        prefs.getStringList("${_keyMissingSkills}_$suffix") ?? [];
     double score = prefs.getDouble("${_keyMatchScore}_$suffix") ?? 0.0;
 
     if (!acquired.contains(skill)) {
       acquired.add(skill);
       missing.remove(skill);
-      
+
       // Increase score dynamically up to 1.0 (100%)
       score += 0.1; // Add 10% for each skill acquired
       if (score > 1.0) score = 1.0;
@@ -105,10 +109,23 @@ class LocalStorageService {
     }
   }
 
+  static const String _keyAppLocale = "app_locale";
+
+  // Save selected app locale (language)
+  static Future<void> saveAppLocale(String locale) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyAppLocale, locale);
+  }
+
+  static Future<String?> getAppLocale() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyAppLocale);
+  }
+
   // Clear data (e.g. on logout)
   static Future<void> clearData() async {
     final prefs = await SharedPreferences.getInstance();
-    // We don't necessarily want to clear ALL users' data, 
+    // We don't necessarily want to clear ALL users' data,
     // but we should clear the CURRENT user's token and profile session
     await prefs.remove('auth_token');
     await prefs.remove(_keyUserName);
@@ -118,4 +135,3 @@ class LocalStorageService {
     await prefs.remove(_keyUserPhone);
   }
 }
-
