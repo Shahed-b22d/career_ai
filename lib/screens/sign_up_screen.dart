@@ -1,13 +1,15 @@
-import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+
+import '../l10n/locale_provider.dart';
+import '../services/ai_api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_input_field.dart';
-import '../services/ai_api_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -24,6 +26,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final confirmPasswordController = TextEditingController();
   final businessTypeController = TextEditingController();
   final otherBusinessTypeController = TextEditingController();
+  String? selectedRegion;
 
   bool passwordVisible = false;
   bool confirmPasswordVisible = false;
@@ -31,6 +34,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   String selectedRole = "job";
   String? selectedBusinessType;
+
+  final List<String> regions = [
+    "Damascus",
+    "Rif Dimashq",
+    "Aleppo",
+    "Homs",
+    "Hama",
+    "Latakia",
+    "Tartus",
+    "Idlib",
+    "Raqqa",
+    "Al-Hasakah",
+    "Deir ez-Zor",
+    "As-Suwayda",
+    "Daraa",
+    "Quneitra",
+  ];
 
   File? commercialRegisterFile;
 
@@ -73,11 +93,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
       try {
         googleUser = await GoogleSignIn.instance.authenticate();
       } catch (e) {
-        if (mounted) Navigator.pop(context);
-        return;
-      }
-
-      if (googleUser == null) {
         if (mounted) Navigator.pop(context);
         return;
       }
@@ -199,6 +214,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
       showError("Accept terms first");
       return false;
     }
+    if (selectedRegion == null) {
+      showError("Select your region");
+      return false;
+    }
     if (selectedRole == "company" && commercialRegisterFile == null) {
       showError("Upload commercial register");
       return false;
@@ -234,14 +253,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
             children: [
               const SizedBox(height: 10),
               Text(
-                "Create Account",
+                L(context, 'create_account'),
                 style: Theme.of(context).textTheme.displayLarge?.copyWith(
                   fontSize: 32,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                "Join CareerAI to accelerate your growth.",
+                L(context, 'join_text'),
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 30),
@@ -249,13 +268,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
               Row(
                 children: [
                   buildRoleCard(
-                    title: "Job Seeker",
+                    title: L(context, 'job_seeker'),
                     icon: Icons.person_rounded,
                     value: "job",
                   ),
                   const SizedBox(width: 16),
                   buildRoleCard(
-                    title: "Company",
+                    title: L(context, 'company'),
                     icon: Icons.business_rounded,
                     value: "company",
                   ),
@@ -265,14 +284,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 30),
 
               CustomInputField(
-                hint: "Full Name",
+                hint: L(context, 'full_name'),
                 icon: Icons.person_outline_rounded,
                 controller: fullNameController,
               ),
               const SizedBox(height: 16),
 
               CustomInputField(
-                hint: "Email address",
+                hint: L(context, 'email'),
                 icon: Icons.email_outlined,
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
@@ -280,20 +299,43 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 16),
 
               CustomInputField(
-                hint: "Phone Number",
+                hint: L(context, 'phone'),
                 icon: Icons.phone_outlined,
                 controller: phoneController,
                 keyboardType: TextInputType.phone,
+              ),
+
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: selectedRegion,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.location_on_outlined),
+                    hintText: L(context, 'select_region'),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                items: regions
+                    .map((region) => DropdownMenuItem(
+                          value: region,
+                          child: Text(region),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedRegion = value;
+                  });
+                },
               ),
 
               if (selectedRole == "company") ...[
                 const SizedBox(height: 16),
 
                 DropdownButtonFormField<String>(
-                  value: selectedBusinessType,
-                  decoration: InputDecoration(
+                  initialValue: selectedBusinessType,
+                    decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.work_outline_rounded),
-                    hintText: "Select Business Type",
+                    hintText: L(context, 'select_business_type'),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -312,7 +354,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   },
                 ),
 
-                if (selectedBusinessType == "Other") ...[
+                  if (selectedBusinessType == "Other") ...[
                   const SizedBox(height: 12),
                   CustomInputField(
                     hint: "Enter your business type",
@@ -347,8 +389,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   icon: const Icon(Icons.upload_file),
                   label: Text(
                     commercialRegisterFile == null
-                        ? "Upload Commercial Register"
-                        : "File Selected ✓",
+                        ? L(context, 'upload_register')
+                        : L(context, 'file_selected'),
                   ),
                 ),
               ],
@@ -356,7 +398,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 16),
 
               CustomInputField(
-                hint: "Password",
+                hint: L(context, 'password'),
                 icon: Icons.lock_outline_rounded,
                 controller: passwordController,
                 isPassword: true,
@@ -371,7 +413,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 16),
 
               CustomInputField(
-                hint: "Confirm Password",
+                hint: L(context, 'confirm_password'),
                 icon: Icons.lock_outline_rounded,
                 controller: confirmPasswordController,
                 isPassword: true,
@@ -395,9 +437,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       });
                     },
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      "I agree to the Terms of Service & Privacy Policy",
+                      L(context, 'accept_terms'),
                     ),
                   ),
                 ],
@@ -406,7 +448,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 30),
 
               CustomButton(
-                text: "Create Account",
+                text: L(context, 'create_account'),
                 onPressed: () async {
                   if (!validate()) return;
 
@@ -425,6 +467,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       password: passwordController.text,
                       role: selectedRole,
                       phone: phoneController.text.trim(),
+                      region: selectedRegion,
                       businessType:
                           selectedRole == 'company'
                               ? (selectedBusinessType == "Other"
