@@ -1,11 +1,14 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+
+import '../l10n/locale_provider.dart';
+import '../services/ai_api_service.dart';
+import '../services/local_storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_input_field.dart';
-import '../services/ai_api_service.dart';
-import '../services/local_storage_service.dart';
 
 class PersonProfile extends StatefulWidget {
   const PersonProfile({super.key});
@@ -21,6 +24,9 @@ class _PersonProfileState extends State<PersonProfile>
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final phoneController = TextEditingController();
+  String currentRole = "job";
+  String? selectedRegion;
+  String? savedBusinessType;
 
   File? _image;
 
@@ -53,6 +59,9 @@ class _PersonProfileState extends State<PersonProfile>
       nameController.text = profile['name'] ?? "";
       emailController.text = profile['email'] ?? "";
       phoneController.text = profile['phone'] ?? "";
+      currentRole = profile['role'] ?? "job";
+      selectedRegion = profile['region'];
+      savedBusinessType = profile['businessType'];
     });
   }
 
@@ -108,6 +117,31 @@ class _PersonProfileState extends State<PersonProfile>
                 child: Column(
                   children: [
 
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                          // Language toggle
+                          TextButton(
+                            onPressed: () {
+                              final provider = LocaleProvider.of(context);
+                              final next = provider.locale == 'en' ? 'ar' : 'en';
+                              provider.setLocale(next);
+                            },
+                            child: Text(
+                              LocaleProvider.of(context).locale == 'en' ? 'AR' : 'EN',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
                     Stack(
                       children: [
                         CircleAvatar(
@@ -148,9 +182,9 @@ class _PersonProfileState extends State<PersonProfile>
 
                     const SizedBox(height: 12),
 
-                    const Text(
-                      "Edit Profile",
-                      style: TextStyle(
+                    Text(
+                      L(context, 'edit_profile'),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -173,7 +207,7 @@ class _PersonProfileState extends State<PersonProfile>
                         children: [
 
                           CustomInputField(
-                            hint: "Full Name",
+                            hint: L(context, 'full_name'),
                             icon: Icons.person_outline,
                             controller: nameController,
                             validator: (v) {
@@ -185,7 +219,7 @@ class _PersonProfileState extends State<PersonProfile>
                           const SizedBox(height: 16),
 
                           CustomInputField(
-                            hint: "Email",
+                            hint: L(context, 'email'),
                             icon: Icons.email_outlined,
                             controller: emailController,
                             validator: (v) =>
@@ -195,24 +229,71 @@ class _PersonProfileState extends State<PersonProfile>
                           const SizedBox(height: 16),
 
                           CustomInputField(
-                            hint: "Phone",
+                            hint: L(context, 'phone'),
                             icon: Icons.phone_outlined,
                             controller: phoneController,
                             validator: (v) =>
                                 !isValidPhone(v!) ? "Invalid phone" : null,
                           ),
 
+                          const SizedBox(height: 16),
+                          DropdownButtonFormField<String>(
+                            value: selectedRegion,
+                            decoration: InputDecoration(
+                              hintText: L(context, 'select_region'),
+                              prefixIcon: const Icon(Icons.location_on_outlined),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            items: [
+                              "Damascus",
+                              "Rif Dimashq",
+                              "Aleppo",
+                              "Homs",
+                              "Hama",
+                              "Latakia",
+                              "Tartus",
+                              "Idlib",
+                              "Raqqa",
+                              "Al-Hasakah",
+                              "Deir ez-Zor",
+                              "As-Suwayda",
+                              "Daraa",
+                              "Quneitra",
+                            ]
+                                .map((region) => DropdownMenuItem(
+                                      value: region,
+                                      child: Text(region),
+                                    ))
+                                .toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                selectedRegion = value;
+                              });
+                            },
+                          ),
+
                           const SizedBox(height: 30),
 
                           // 🔥 SAVE
                           CustomButton(
-                            text: "Save Changes",
+                            text: L(context, 'save_changes'),
                             onPressed: () {
                               if (!_formKey.currentState!.validate()) return;
 
+                              LocalStorageService.saveUserProfile(
+                                name: nameController.text.trim(),
+                                email: emailController.text.trim(),
+                                role: currentRole,
+                                phone: phoneController.text.trim(),
+                                region: selectedRegion,
+                                businessType: savedBusinessType,
+                              );
+
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Saved successfully ✅"),
+                                SnackBar(
+                                  content: Text(L(context, 'saved_success')),
                                   backgroundColor: Colors.green,
                                 ),
                               );

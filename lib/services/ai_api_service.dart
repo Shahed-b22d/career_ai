@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'local_storage_service.dart';
 
 class AiApiService {
@@ -56,6 +58,7 @@ class AiApiService {
     required String role,
     String? phone,
     String? businessType,
+    String? region,
     File? commercialRegisterFile,
   }) async {
     try {
@@ -73,6 +76,7 @@ class AiApiService {
         request.fields['role'] = role;
         if (phone != null) request.fields['phone'] = phone;
         if (businessType != null) request.fields['business_type'] = businessType;
+        if (region != null) request.fields['region'] = region;
 
         request.files.add(await http.MultipartFile.fromPath(
           'commercial_register_file', 
@@ -96,6 +100,7 @@ class AiApiService {
             'role': role,
             'phone': phone,
             'business_type': businessType,
+            'region': region,
           }),
         );
       }
@@ -116,6 +121,7 @@ class AiApiService {
             role: data['user']['role'] ?? role,
             businessType: data['user']['business_type'] ?? businessType,
             phone: data['user']['phone'] ?? phone,
+            region: data['user']['region'] ?? region,
           );
         } else {
           await LocalStorageService.saveUserProfile(
@@ -124,6 +130,7 @@ class AiApiService {
             role: role,
             businessType: businessType,
             phone: phone,
+            region: region,
           );
         }
 
@@ -182,6 +189,7 @@ class AiApiService {
             role: data['user']['role'],
             businessType: data['user']['business_type'],
             phone: data['user']['phone'],
+            region: data['user']['region'],
           );
         }
 

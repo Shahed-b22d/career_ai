@@ -1,11 +1,14 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+
+import '../l10n/locale_provider.dart';
+import '../services/ai_api_service.dart';
+import '../services/local_storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_input_field.dart';
-import '../services/ai_api_service.dart';
-import '../services/local_storage_service.dart';
 
 class CompanyProfileScreen extends StatefulWidget {
   const CompanyProfileScreen({super.key});
@@ -23,6 +26,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
   final emailController = TextEditingController();
   final phoneController = TextEditingController();
   final descriptionController = TextEditingController();
+  String? selectedRegion;
 
   String workType = "IT";
 
@@ -58,6 +62,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
       emailController.text = profile['email'] ?? "";
       phoneController.text = profile['phone'] ?? "";
       workType = profile['businessType'] ?? "IT";
+      selectedRegion = profile['region'];
     });
   }
 
@@ -217,7 +222,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
                     const SizedBox(height: 16),
 
                     Text(
-                      "Company Profile",
+                      L(context, 'company_profile'),
                       style: Theme.of(context).textTheme.displayMedium?.copyWith(
                         color: Colors.white,
                         fontSize: 24,
@@ -240,7 +245,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
                         children: [
 
                           CustomInputField(
-                            hint: "Company Name",
+                            hint: L(context, 'company_name'),
                             icon: Icons.business_outlined,
                             controller: nameController,
                           ),
@@ -248,7 +253,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
                           const SizedBox(height: 16),
 
                           CustomInputField(
-                            hint: "Email",
+                            hint: L(context, 'email'),
                             icon: Icons.email_outlined,
                             controller: emailController,
                           ),
@@ -256,16 +261,57 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
                           const SizedBox(height: 16),
 
                           CustomInputField(
-                            hint: "Phone",
+                            hint: L(context, 'phone'),
                             icon: Icons.phone_outlined,
                             controller: phoneController,
+                          ),
+
+                          const SizedBox(height: 16),
+                          DropdownButtonFormField<String>(
+                            value: selectedRegion,
+                            decoration: InputDecoration(
+                              hintText: L(context, 'select_region'),
+                              prefixIcon: const Icon(Icons.location_on_outlined, color: AppTheme.primaryColor),
+                              filled: true,
+                              fillColor: AppTheme.cardColor,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            items: [
+                              "Damascus",
+                              "Rif Dimashq",
+                              "Aleppo",
+                              "Homs",
+                              "Hama",
+                              "Latakia",
+                              "Tartus",
+                              "Idlib",
+                              "Raqqa",
+                              "Al-Hasakah",
+                              "Deir ez-Zor",
+                              "As-Suwayda",
+                              "Daraa",
+                              "Quneitra",
+                            ]
+                                .map((region) => DropdownMenuItem(
+                                      value: region,
+                                      child: Text(region),
+                                    ))
+                                .toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                selectedRegion = value;
+                              });
+                            },
                           ),
 
                           const SizedBox(height: 16),
 
                           /// 🔥 Dropdown أنيق
                           DropdownButtonFormField<String>(
-                            value: workType,
+                            initialValue: workType,
                             decoration: InputDecoration(
                               hintText: "Work Type",
                               prefixIcon: const Icon(Icons.work_outline, color: AppTheme.primaryColor),
@@ -292,7 +338,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
                             controller: descriptionController,
                             maxLines: 3,
                             decoration: InputDecoration(
-                              hintText: "Company Description",
+                              hintText: L(context, 'company_description'),
                               prefixIcon: const Icon(Icons.description_outlined, color: AppTheme.primaryColor),
                               filled: true,
                               fillColor: AppTheme.cardColor,
@@ -306,11 +352,19 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
                           const SizedBox(height: 40),
 
                           CustomButton(
-                            text: "Save Changes",
+                            text: L(context, 'save_changes'),
                             onPressed: () {
+                              LocalStorageService.saveUserProfile(
+                                name: nameController.text.trim(),
+                                email: emailController.text.trim(),
+                                role: "company",
+                                businessType: workType,
+                                phone: phoneController.text.trim(),
+                                region: selectedRegion,
+                              );
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Updated Successfully ✅"),
+                                SnackBar(
+                                  content: Text(L(context, 'updated_success')),
                                   backgroundColor: Colors.green,
                                 ),
                               );
