@@ -6,9 +6,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'local_storage_service.dart';
 
 class AiApiService {
-  // Base URL for Real Device pointing to Localhost via ADB Reverse
-  static const String baseUrl = 'http://localhost:8000/api/ai';
-  static const String authUrl = 'http://localhost:8000/api/auth';
+  // 10.0.2.2 = localhost for Android Emulator
+  // Change to your machine's local IP (e.g. 192.168.x.x) for a real device
+  static const String _host    = 'http://10.0.2.2:8000';
+  static const String baseUrl  = '$_host/api/ai';
+  static const String authUrl  = '$_host/api/auth';
 
   /// دالة مساعدة لتنظيف الردود القادمة من السيرفر من أي تحذيرات (PHP Warnings)
   static dynamic _cleanAndDecode(String body) {
@@ -42,68 +44,84 @@ class AiApiService {
     }
   }
 
-  // Helper function to get token
+  // Helper: get saved token
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('auth_token');
   }
 
-  // 1. Auth: Register
-  static Future<Map<String, dynamic>?> register({
+  // Helper: build Authorization headers
+  static Future<Map<String, String>> getAuthHeaders() async {
+    final token = await getToken();
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  // ─── 1. Auth: Register ──────────────────────────────────────────────────────
+  /// Supports file upload (commercial_register_file) for companies.
+  /// Uses multipart/form-data so it works with and without a file.
+  static Future<Map<String, dynamic>> register({
     required String name,
     required String email,
     required String password,
     required String role,
     String? phone,
     String? businessType,
+    File? commercialRegisterFile,
   }) async {
     try {
-      print("DEBUG: Calling Register URL: ${Uri.parse('$authUrl/register')}");
-      
-      final response = await http.post(
+      final token = await getToken();
+
+      final request = http.MultipartRequest(
+        'POST',
         Uri.parse('$authUrl/register'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode({
-          'name': name,
-          'email': email,
-          'password': password,
-          'password_confirmation': password, // مطلوب للباك-إند (Laravel confirmed rule)
-          'role': role,
-          'phone': phone,
-          'business_type': businessType,
-        }),
       );
 
-      print("DEBUG: Register Response Status: ${response.statusCode}");
-      print("DEBUG: Register Response Body: ${response.body}");
+      request.headers['Accept'] = 'application/json';
+      if (token != null) request.headers['Authorization'] = 'Bearer $token';
+
+      // Text fields
+      request.fields['name']     = name;
+      request.fields['email']    = email;
+      request.fields['password'] = password;
+      request.fields['role']     = role;
+      if (phone != null && phone.isNotEmpty) {
+        request.fields['phone'] = phone;
+      }
+      if (businessType != null && businessType.isNotEmpty) {
+        request.fields['business_type'] = businessType;
+      }
+
+      // File field (company only)
+      if (commercialRegisterFile != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'commercial_register_file',
+            commercialRegisterFile.path,
+          ),
+        );
+      }
+
+      final streamed  = await request.send();
+      final response  = await http.Response.fromStream(streamed);
 
       if (response.statusCode == 201) {
-        final data = _cleanAndDecode(response.body);
+        final data = _cleanAndDecode(response.body) as Map<String, dynamic>;
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('auth_token', data['token']);
 
-        // Save user profile locally
         if (data['user'] != null) {
           await LocalStorageService.saveUserProfile(
-            name: data['user']['name'] ?? name,
-            email: data['user']['email'] ?? email,
-            role: data['user']['role'] ?? role,
+            name:         data['user']['name']          ?? name,
+            email:        data['user']['email']         ?? email,
+            role:         data['user']['role']          ?? role,
             businessType: data['user']['business_type'] ?? businessType,
-            phone: data['user']['phone'] ?? phone,
-          );
-        } else {
-          await LocalStorageService.saveUserProfile(
-            name: name,
-            email: email,
-            role: role,
-            businessType: businessType,
-            phone: phone,
+            phone:        data['user']['phone']         ?? phone,
           );
         }
-
         return data;
       } else {
         String errorMsg = response.body;
@@ -113,23 +131,20 @@ class AiApiService {
             errorMsg = decoded['message'];
           }
         } catch (_) {}
-        throw Exception("Server Error (${response.statusCode}): $errorMsg");
+        throw Exception(errorMsg);
       }
     } catch (e) {
-      throw Exception("$e");
+      throw Exception(e.toString().replaceFirst('Exception: ', ''));
     }
   }
 
-  // 2. Auth: Login
-  static Future<Map<String, dynamic>?> login({
+  // ─── 2. Auth: Login ─────────────────────────────────────────────────────────
+  static Future<Map<String, dynamic>> login({
     required String email,
     required String password,
     required String role,
   }) async {
     try {
-      print("DEBUG: Calling Login URL: ${Uri.parse('$authUrl/login')}");
-      print("DEBUG: Request Body: ${jsonEncode({'email': email, 'password': password, 'role': role})}");
-
       final response = await http.post(
         Uri.parse('$authUrl/login'),
         headers: {
@@ -137,31 +152,26 @@ class AiApiService {
           'Accept': 'application/json',
         },
         body: jsonEncode({
-          'email': email,
+          'email':    email,
           'password': password,
-          'role': role,
+          'role':     role,
         }),
       );
 
-      print("DEBUG: Login Response Status: ${response.statusCode}");
-      print("DEBUG: Login Response Body: ${response.body}");
-
       if (response.statusCode == 200) {
-        final data = _cleanAndDecode(response.body);
+        final data = _cleanAndDecode(response.body) as Map<String, dynamic>;
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('auth_token', data['token']);
 
-        // Save user profile locally
         if (data['user'] != null) {
           await LocalStorageService.saveUserProfile(
-            name: data['user']['name'],
-            email: data['user']['email'],
-            role: data['user']['role'],
+            name:         data['user']['name'],
+            email:        data['user']['email'],
+            role:         data['user']['role'],
             businessType: data['user']['business_type'],
-            phone: data['user']['phone'],
+            phone:        data['user']['phone'],
           );
         }
-
         return data;
       } else {
         String errorMsg = response.body;
@@ -171,10 +181,10 @@ class AiApiService {
             errorMsg = decoded['message'];
           }
         } catch (_) {}
-        throw Exception("Server Error (${response.statusCode}): $errorMsg");
+        throw Exception(errorMsg);
       }
     } catch (e) {
-      throw Exception("$e");
+      throw Exception(e.toString().replaceFirst('Exception: ', ''));
     }
   }
 
