@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_input_field.dart';
+import '../services/ai_api_service.dart';
 
 class PostJobScreen extends StatefulWidget {
   const PostJobScreen({super.key});
@@ -31,158 +33,87 @@ class _PostJobScreenState extends State<PostJobScreen> {
     super.dispose();
   }
 
-  // 🔹 دالة الدفع الوهمية بـ Stripe لحين ربط الباك-إند
-  void handleStripePaymentAndPostJob() {
+  // 🔹 دالة الدفع ورفع الوظيفة عبر الباك-إند
+  void handleStripePaymentAndPostJob() async {
     if (!_formKey.currentState!.validate()) return;
     
     // إخفاء لوحة المفاتيح
     FocusScope.of(context).unfocus();
 
-    // إظهار نافذة الدفع
-    showModalBottomSheet(
+    // إظهار مؤشر التحميل
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _buildStripeMockupSheet(),
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor)),
     );
-    
-    // الكود الحقيقي الخاص بـ Stripe متواجد بالأسفل:
-    /*
-    try {
-      // 1. جلب PaymentIntent (Client Secret) من السيرفر الخاص بك (Laravel/NodeJs)
-      // final response = await http.post("YOUR_API_URL/create-payment-intent", body: {'amount': 2500, 'currency': 'usd'});
-      // final clientSecret = jsonDecode(response.body)['clientSecret'];
 
-      // 2. إعداد شاشة Stripe
-      // await Stripe.instance.initPaymentSheet(
-      //   paymentSheetParameters: SetupPaymentSheetParameters(
-      //     paymentIntentClientSecret: clientSecret,
-      //     merchantDisplayName: 'CareerAI Inc.',
-      //   ),
-      // );
+    // استدعاء الباك-إند لإنشاء الوظيفة والحصول على رابط دفع Stripe
+    final response = await AiApiService.createJobAndGetCheckoutUrl(
+      title: titleController.text,
+      jobType: jobType,
+      location: locationController.text,
+      salary: salaryController.text,
+      description: descController.text,
+      requirements: reqController.text,
+    );
 
-      // 3. إظهار الدفع
-      // await Stripe.instance.presentPaymentSheet();
+    if (!mounted) return;
+    Navigator.pop(context); // إخفاء مؤشر التحميل
 
-      // 4. بعد النجاح، رفع الوظيفة
-      // postJobToDatabase();
-      // ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Job Posted Successfully! ✅")));
+    if (response != null && response['success'] == true && response['checkout_url'] != null) {
+      final checkoutUrl = response['checkout_url'] as String;
+      final uri = Uri.parse(checkoutUrl);
       
-    } catch (e) {
-      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Payment Failed: $e")));
-    }
-    */
-  }
-
-  Widget _buildStripeMockupSheet() {
-    return Container(
-      padding: EdgeInsets.only(
-        top: 24, left: 24, right: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Stripe Checkout",
-                style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                  fontSize: 20,
-                  color: const Color(0xFF635BFF), // لون سترايب مميز
-                ),
+      try {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        
+        // إظهار تنبيه للمستخدم لإعلامه بالدفع في المتصفح والعودة للتطبيق
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: const Row(
+                children: [
+                  Icon(Icons.payment_rounded, color: AppTheme.primaryColor, size: 30),
+                  SizedBox(width: 10),
+                  Text("Pay in Browser", style: TextStyle(fontWeight: FontWeight.bold)),
+                ],
               ),
-              const Icon(Icons.close_rounded, color: Colors.grey),
-            ],
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "Pay to publish your job listing immediately.",
-            style: TextStyle(color: Colors.grey, fontSize: 13),
-          ),
-          const SizedBox(height: 24),
-          
-          // حقل بطاقة وهمي
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(12),
-              color: Colors.grey.shade50,
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.credit_card_rounded, color: Colors.grey),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      hintText: "Card information",
-                      isDense: true,
-                    ),
-                    keyboardType: TextInputType.number,
+              content: const Text("Stripe checkout has opened in your browser. Please complete payment there. Once completed, your job post will be published automatically!"),
+              actions: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    Navigator.pop(context); // العودة للشاشة السابقة
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
+                  child: const Text("Done / Back to Dashboard", style: TextStyle(color: Colors.white)),
                 ),
               ],
             ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not launch payment page: $e')),
+          );
+        }
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Failed to initialize payment checkout. Please try again."),
+            backgroundColor: Colors.red,
           ),
-          const SizedBox(height: 24),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text("Total", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-              Text("\$25.00", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          SizedBox(
-            width: double.infinity,
-            height: 55,
-            child: ElevatedButton(
-              onPressed: () async {
-                Navigator.pop(context); // إغلاق نافذة الدفع
-
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (_) => const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor)),
-                );
-
-                await Future.delayed(const Duration(seconds: 2));
-
-                if (mounted) {
-                  Navigator.pop(context); // إغلاق دائرة التحميل
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Payment Successful! Job Published ✅"),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                  Navigator.pop(context); // العودة لملف الشركة
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF635BFF),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text("Pay \$25.00 & Post Job", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            ),
-          ),
-        ],
-      ),
-    );
+        );
+      }
+    }
   }
 
   @override
@@ -324,7 +255,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     onPressed: handleStripePaymentAndPostJob,
                     icon: const Icon(Icons.payment_rounded, color: Colors.white),
                     label: const Text(
-                      "Pay \$25.00 via Stripe & Post",
+                      "Post & Pay",
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     style: ElevatedButton.styleFrom(

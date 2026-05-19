@@ -12,6 +12,11 @@ class CandidateProfileScreen extends StatelessWidget {
     final name = args?['name'] ?? 'Candidate Name';
     final role = args?['role'] ?? 'Role title';
     final matchScore = args?['match'] ?? '90%';
+    final email = args?['email'] ?? 'No email provided';
+    final phone = args?['phone'] ?? 'No phone provided';
+    final governorate = args?['governorate'] ?? 'Not specified';
+    final List<dynamic> skills = args?['skills'] ?? [];
+    final List<dynamic> missingSkills = args?['missing_skills'] ?? [];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -27,18 +32,19 @@ class CandidateProfileScreen extends StatelessWidget {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildProfileHeader(name, role, matchScore),
+            const SizedBox(height: 24),
+            _buildContactInfo(email, phone, governorate),
             const SizedBox(height: 32),
-            _buildMatchDetails(),
-            const SizedBox(height: 32),
-            _buildExperienceSection(),
+            _buildMatchDetails(skills, missingSkills),
             const SizedBox(height: 40),
             CustomButton(
               text: "Shortlist & Contact",
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Candidate shortlisted successfully!")),
+                  SnackBar(content: Text("Shortlisted $name successfully!")),
                 );
               },
             ),
@@ -50,6 +56,7 @@ class CandidateProfileScreen extends StatelessWidget {
 
   Widget _buildProfileHeader(String name, String role, String matchScore) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -107,19 +114,102 @@ class CandidateProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMatchDetails() {
+  Widget _buildContactInfo(String email, String phone, String governorate) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Contact Information",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+          ),
+          const SizedBox(height: 16),
+          _buildInfoRow(Icons.email_outlined, "Email", email),
+          const SizedBox(height: 12),
+          _buildInfoRow(Icons.phone_android_outlined, "Phone", phone),
+          const SizedBox(height: 12),
+          _buildInfoRow(Icons.location_on_outlined, "Governorate", governorate),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, color: AppTheme.primaryColor, size: 20),
+        const SizedBox(width: 12),
+        Text(
+          "$label: ",
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.black54),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMatchDetails(List<dynamic> skills, List<dynamic> missingSkills) {
+    final List<Widget> matchedWidgets = [];
+    final List<Widget> missingWidgets = [];
+
+    for (var s in skills) {
+      matchedWidgets.add(_buildSkillMatchRow(s.toString(), true));
+    }
+
+    for (var ms in missingSkills) {
+      missingWidgets.add(_buildSkillMatchRow(ms.toString(), false));
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Why AI matched this candidate:",
+          "AI Gap Analysis (Skills & Gaps)",
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
         ),
         const SizedBox(height: 16),
-        _buildSkillMatchRow("Flutter Framework", true),
-        _buildSkillMatchRow("Dart Programming", true),
-        _buildSkillMatchRow("Firebase", true),
-        _buildSkillMatchRow("UI/UX Design", false),
+        if (matchedWidgets.isEmpty && missingWidgets.isEmpty)
+          const Text(
+            "No skills data was extracted from the resume.",
+            style: TextStyle(color: Colors.black54, fontStyle: FontStyle.italic),
+          )
+        else ...[
+          if (matchedWidgets.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8.0, left: 4.0),
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 14),
+              child: Text("Candidate Strengths / Current Skills"),
+            ),
+            ...matchedWidgets,
+            const SizedBox(height: 16),
+          ],
+          if (missingWidgets.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8.0, left: 4.0),
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red, fontSize: 14),
+              child: Text("Missing Skills / Gap Areas"),
+            ),
+            ...missingWidgets,
+          ],
+        ],
       ],
     );
   }
@@ -140,62 +230,16 @@ class CandidateProfileScreen extends StatelessWidget {
             color: isMatched ? Colors.green : Colors.red,
           ),
           const SizedBox(width: 16),
-          Text(
-            skill,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87),
-          ),
-          const Spacer(),
-          Text(
-            isMatched ? "Matched" : "Missing",
-            style: TextStyle(fontSize: 13, color: isMatched ? Colors.green : Colors.red),
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExperienceSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Experience & Education",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
-        ),
-        const SizedBox(height: 16),
-        _buildTimelineItem("Senior Flutter Developer", "Tech Solutions • 2023 - Present"),
-        _buildTimelineItem("Mobile App Developer", "Innovatech • 2021 - 2023"),
-        _buildTimelineItem("B.S. Computer Science", "University of Technology • 2017 - 2021"),
-      ],
-    );
-  }
-
-  Widget _buildTimelineItem(String title, String subtitle) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 4),
-            width: 12,
-            height: 12,
-            decoration: const BoxDecoration(
-              color: Colors.blue,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 16),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                const SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(color: Colors.black54, fontSize: 13)),
-              ],
+            child: Text(
+              skill,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87),
             ),
           ),
+          Text(
+            isMatched ? "Possessed" : "Missing",
+            style: TextStyle(fontSize: 13, color: isMatched ? Colors.green : Colors.red, fontWeight: FontWeight.bold),
+          )
         ],
       ),
     );
