@@ -68,6 +68,7 @@ class AiApiService {
     required String email,
     required String password,
     required String role,
+    required String governorate,
     String? phone,
     String? businessType,
     File? commercialRegisterFile,
@@ -84,10 +85,11 @@ class AiApiService {
       if (token != null) request.headers['Authorization'] = 'Bearer $token';
 
       // Text fields
-      request.fields['name']     = name;
-      request.fields['email']    = email;
-      request.fields['password'] = password;
-      request.fields['role']     = role;
+      request.fields['name']        = name;
+      request.fields['email']       = email;
+      request.fields['password']    = password;
+      request.fields['role']        = role;
+      request.fields['governorate']  = governorate;
       if (phone != null && phone.isNotEmpty) {
         request.fields['phone'] = phone;
       }
@@ -120,6 +122,7 @@ class AiApiService {
             role:         data['user']['role']          ?? role,
             businessType: data['user']['business_type'] ?? businessType,
             phone:        data['user']['phone']         ?? phone,
+            governorate:  data['user']['governorate']    ?? governorate,
           );
         }
         return data;
@@ -390,6 +393,29 @@ class AiApiService {
     } catch (e) {
       print("Exception in generateAtsCv: $e");
       return "Error: $e";
+    }
+  }
+
+  /// Get the latest CV text and analysis from the server
+  static Future<Map<String, dynamic>?> getLatestCv() async {
+    try {
+      final token = await getToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/cv/latest'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return _cleanAndDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      print("Exception in getLatestCv: $e");
+      return null;
     }
   }
 }

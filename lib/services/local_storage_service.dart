@@ -5,6 +5,7 @@ class LocalStorageService {
   static const String _keyMatchScore = "cv_match_score";
   static const String _keyAcquiredSkills = "cv_acquired_skills";
   static const String _keyMissingSkills = "cv_missing_skills";
+  static const String _keyCvText = "cv_text";
 
   // Profile Keys
   static const String _keyUserName = "user_name";
@@ -12,6 +13,7 @@ class LocalStorageService {
   static const String _keyUserRole = "user_role";
   static const String _keyBusinessType = "business_type";
   static const String _keyUserPhone = "user_phone";
+  static const String _keyUserGovernorate = "user_governorate";
 
   // --- Profile Methods ---
 
@@ -21,6 +23,7 @@ class LocalStorageService {
     required String role,
     String? businessType,
     String? phone,
+    String? governorate,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyUserName, name);
@@ -32,6 +35,9 @@ class LocalStorageService {
     if (phone != null) {
       await prefs.setString(_keyUserPhone, phone);
     }
+    if (governorate != null) {
+      await prefs.setString(_keyUserGovernorate, governorate);
+    }
   }
 
   static Future<Map<String, String?>> getUserProfile() async {
@@ -42,6 +48,7 @@ class LocalStorageService {
       'role': prefs.getString(_keyUserRole),
       'businessType': prefs.getString(_keyBusinessType),
       'phone': prefs.getString(_keyUserPhone),
+      'governorate': prefs.getString(_keyUserGovernorate),
     };
   }
 
@@ -57,6 +64,7 @@ class LocalStorageService {
     required double matchScore,
     required List<String> acquiredSkills,
     required List<String> missingSkills,
+    String? cvText,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final suffix = await _getSuffix();
@@ -64,6 +72,9 @@ class LocalStorageService {
     await prefs.setDouble("${_keyMatchScore}_$suffix", matchScore);
     await prefs.setStringList("${_keyAcquiredSkills}_$suffix", acquiredSkills);
     await prefs.setStringList("${_keyMissingSkills}_$suffix", missingSkills);
+    if (cvText != null) {
+      await prefs.setString("${_keyCvText}_$suffix", cvText);
+    }
   }
 
   // Load the current stats
@@ -76,11 +87,13 @@ class LocalStorageService {
         prefs.getStringList("${_keyAcquiredSkills}_$suffix") ?? [];
     List<String> missing =
         prefs.getStringList("${_keyMissingSkills}_$suffix") ?? [];
+    String cvText = prefs.getString("${_keyCvText}_$suffix") ?? "";
 
     return {
       'matchScore': score,
       'acquiredSkills': acquired,
       'missingSkills': missing,
+      'cvText': cvText,
     };
   }
 
@@ -133,5 +146,6 @@ class LocalStorageService {
     await prefs.remove(_keyUserRole);
     await prefs.remove(_keyBusinessType);
     await prefs.remove(_keyUserPhone);
+    await prefs.remove(_keyUserGovernorate);
   }
 }

@@ -3,6 +3,8 @@ import '../theme/app_theme.dart';
 import '../services/local_storage_service.dart';
 import '../services/ai_api_service.dart';
 import 'roadmap_screen.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:share_plus/share_plus.dart';
 
 class UserDashboard extends StatefulWidget {
   const UserDashboard({super.key});
@@ -16,6 +18,7 @@ class _UserDashboardState extends State<UserDashboard> {
   List<String> acquiredSkills = [];
   List<String> missingSkills = [];
   String userName = "Career Trainee";
+  String userDataText = "";
   bool isLoading = true;
 
   Map<String, dynamic>? activeRoadmap;
@@ -29,17 +32,44 @@ class _UserDashboardState extends State<UserDashboard> {
 
   Future<void> _loadData() async {
     try {
-      final data = await LocalStorageService.getAnalysisData();
+      var data = await LocalStorageService.getAnalysisData();
       final profile = await LocalStorageService.getUserProfile();
       
       // جلب المسار النشط من السيرفر
       final roadmapRes = await AiApiService.getActiveRoadmap();
+
+      // جلب السيرة الذاتية الأخيرة من السيرفر لتحديث البيانات وتفادي أي أخطاء
+      final latestCvRes = await AiApiService.getLatestCv();
+      if (latestCvRes != null && latestCvRes['success'] == true && latestCvRes['data'] != null) {
+        final cvData = latestCvRes['data'];
+        final currentSkills = List<String>.from(cvData['current_skills'] ?? []);
+        final missingSkillsList = List<String>.from(cvData['missing_skills'] ?? []);
+        final originalText = cvData['original_text'] ?? "";
+        
+        double calculatedScore = data['matchScore'] ?? 0.0;
+        if (calculatedScore == 0.0 && (currentSkills.isNotEmpty || missingSkillsList.isNotEmpty)) {
+          final totalSkills = currentSkills.length + missingSkillsList.length;
+          if (totalSkills > 0) {
+            calculatedScore = currentSkills.length / totalSkills;
+          }
+        }
+
+        await LocalStorageService.saveAnalysisData(
+          matchScore: calculatedScore,
+          acquiredSkills: currentSkills,
+          missingSkills: missingSkillsList,
+          cvText: originalText,
+        );
+
+        data = await LocalStorageService.getAnalysisData();
+      }
       
       if (mounted) {
         setState(() {
           matchScore = data['matchScore'] ?? 0.0;
-          acquiredSkills = data['acquiredSkills'] ?? [];
-          missingSkills = data['missingSkills'] ?? [];
+          acquiredSkills = List<String>.from(data['acquiredSkills'] ?? []);
+          missingSkills = List<String>.from(data['missingSkills'] ?? []);
+          userDataText = data['cvText'] ?? "";
           userName = profile['name'] ?? "Career Trainee";
           
           if (roadmapRes != null && roadmapRes['success'] == true) {
@@ -88,8 +118,6 @@ class _UserDashboardState extends State<UserDashboard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildHeader(context),
-                      const SizedBox(height: 24),
-                      _buildAiInsight(context),
                       const SizedBox(height: 24),
                       _buildStats(context),
                       const SizedBox(height: 32),
@@ -141,47 +169,6 @@ class _UserDashboardState extends State<UserDashboard> {
     );
   }
 
-  // 🔹 AI Insight (Dynamic)
-  Widget _buildAiInsight(BuildContext context) {
-    String message = "Upload a CV to let AI analyze your career path 🚀";
-    if (missingSkills.isNotEmpty) {
-      message = "AI suggests improving: ${missingSkills.take(2).join(', ')} 🔥";
-    } else if (acquiredSkills.isNotEmpty) {
-      message = "You have all the required skills! Generate your ATS CV now 🌟";
-    }
-
-    return GestureDetector(
-      onTap: () {
-        if (missingSkills.isNotEmpty) {
-           // Go to roadmap
-        } else {
-           Navigator.pushNamed(context, '/uploadCV');
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF0052FF), Color(0xFF6B00FF)],
-          ),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.auto_awesome, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                message,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16)
-          ],
-        ),
-      ),
-    );
-  }
 
   // 🔹 Stats (Dynamic)
   Widget _buildStats(BuildContext context) {
@@ -440,6 +427,8 @@ class _UserDashboardState extends State<UserDashboard> {
   Widget _buildActions(BuildContext context) {
     return Column(
       children: [
+        _actionButton("Generate ATS CV", Icons.description_outlined, () => _generateAtsCv(context)),
+        const SizedBox(height: 12),
         _actionButton("Upload New CV", Icons.upload, () {
           Navigator.pushNamed(context, '/uploadCV');
         }),
@@ -458,5 +447,71 @@ class _UserDashboardState extends State<UserDashboard> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
+  }
+
+  Future<void> _generateAtsCv(BuildContext context) async {
+    if (userDataText.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please upload a CV first to generate your ATS CV"),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final result = await AiApiService.generateAtsCv(userDataText, [...acquiredSkills, ...missingSkills]);
+
+    if (!context.mounted) return;
+    Navigator.pop(context);
+
+    if (result != null && !result.startsWith("Error:")) {
+      showDialog(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green, size: 30),
+              SizedBox(width: 10),
+              Text("Success!", style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: const Text("Your ATS-friendly CV has been generated successfully. What would you like to do?"),
+          actions: [
+            TextButton.icon(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                OpenFilex.open(result);
+              },
+              icon: const Icon(Icons.picture_as_pdf, color: AppTheme.primaryColor),
+              label: const Text("Open CV", style: TextStyle(color: AppTheme.primaryColor)),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                Share.shareXFiles([XFile(result)], text: "Here is my new ATS CV generated by CareerAI!");
+              },
+              icon: const Icon(Icons.share, color: Colors.white),
+              label: const Text("Share / Save", style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed: ${result ?? "Unknown error"}')),
+      );
+    }
   }
 }

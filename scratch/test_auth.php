@@ -21,6 +21,7 @@ echo "===== 1. REGISTER JOB SEEKER =====\n";
 [$c, $r] = req('POST', "$base/register", [
     'name' => 'Mohammed Ali', 'email' => $testEmail,
     'password' => 'secret123', 'role' => 'job', 'phone' => '0501234567',
+    'governorate' => 'Damascus',
 ]);
 echo "Status: $c\n" . json_encode($r, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE) . "\n\n";
 $token1 = $r['token'] ?? null;
@@ -59,6 +60,7 @@ echo "===== 6. REGISTER COMPANY =====\n";
     'name' => 'Tech Corp', 'email' => $compEmail,
     'password' => 'secret123', 'role' => 'company',
     'phone' => '0501111111', 'business_type' => 'Technology / IT',
+    'governorate' => 'Aleppo',
 ]);
 echo "Status: $c\n" . json_encode($r, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE) . "\n\n";
 $compToken = $r['token'] ?? null;

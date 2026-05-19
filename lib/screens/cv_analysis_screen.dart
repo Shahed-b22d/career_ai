@@ -51,6 +51,7 @@ class _CvAnalysisScreenState extends State<CvAnalysisScreen> with SingleTickerPr
         matchScore: matchScore,
         acquiredSkills: acquiredSkills,
         missingSkills: missingSkills,
+        cvText: widget.userDataText,
       );
     }
     _animationController = AnimationController(
