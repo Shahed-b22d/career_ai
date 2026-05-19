@@ -11,7 +11,6 @@ class CompanyDashboard extends StatefulWidget {
 
 class _CompanyDashboardState extends State<CompanyDashboard> {
   String companyName = "Tech Innovators Inc.";
-  String businessType = "Technology";
   bool isLoading = true;
 
   @override
@@ -24,7 +23,6 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
     final profile = await LocalStorageService.getUserProfile();
     setState(() {
       companyName = profile['name'] ?? "Tech Innovators Inc.";
-      businessType = profile['businessType'] ?? "Technology";
       isLoading = false;
     });
   }
@@ -42,8 +40,6 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(context),
-              const SizedBox(height: 24),
-              _buildAiInsightBanner(context),
               const SizedBox(height: 24),
               _buildStatsRow(context),
               const SizedBox(height: 32),
@@ -125,69 +121,6 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
     );
   }
 
-  Widget _buildAiInsightBanner(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(context, '/aiInsights');
-      },
-      child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0052FF), Color(0xFF6B00FF)], // Blue to Purple
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0052FF).withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "AI Talent Insight",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "We found 3 perfect matches for your ${businessType} roles.",
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
-        ],
-      ),
-      ),
-    );
-  }
 
   Widget _buildStatsRow(BuildContext context) {
     return Row(

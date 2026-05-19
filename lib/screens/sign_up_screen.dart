@@ -31,6 +31,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   String selectedRole = "job";
   String? selectedBusinessType;
+  String? selectedGovernorate;
+
+  final List<String> syrianGovernorates = [
+    "Damascus / دمشق",
+    "Rif Dimashq / ريف دمشق",
+    "Aleppo / حلب",
+    "Homs / حمص",
+    "Hama / حماة",
+    "Lattakia / اللاذقية",
+    "Tartus / طرطوس",
+    "Idlib / إدلب",
+    "Daraa / درعا",
+    "As-Suwayda / السويداء",
+    "Quneitra / القنيطرة",
+    "Deir ez-Zor / دير الزور",
+    "Al-Hasakah / الحسكة",
+    "Ar-Raqqah / الرقة",
+  ];
 
   File? commercialRegisterFile;
 
@@ -195,6 +213,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
       showError("Passwords do not match");
       return false;
     }
+    if (selectedGovernorate == null) {
+      showError("Please select a Syrian Governorate");
+      return false;
+    }
     if (!termsAccepted) {
       showError("Accept terms first");
       return false;
@@ -284,6 +306,29 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 icon: Icons.phone_outlined,
                 controller: phoneController,
                 keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 16),
+
+              DropdownButtonFormField<String>(
+                value: selectedGovernorate,
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.location_on_outlined),
+                  hintText: "Select Governorate / اختر المحافظة",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                items: syrianGovernorates.map((gov) {
+                  return DropdownMenuItem(
+                    value: gov,
+                    child: Text(gov),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedGovernorate = value;
+                  });
+                },
               ),
 
               if (selectedRole == "company") ...[
@@ -424,6 +469,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       email: emailController.text.trim(),
                       password: passwordController.text,
                       role: selectedRole,
+                      governorate: selectedGovernorate!,
                       phone: phoneController.text.trim(),
                       businessType:
                           selectedRole == 'company'
