@@ -418,4 +418,93 @@ class AiApiService {
       return null;
     }
   }
+
+  /// Create a new job listing and get the Stripe Checkout Session URL
+  static Future<Map<String, dynamic>?> createJobAndGetCheckoutUrl({
+    required String title,
+    required String jobType,
+    required String location,
+    required String salary,
+    required String description,
+    required String requirements,
+  }) async {
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('$_host/api/jobs'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'title': title,
+          'job_type': jobType,
+          'location': location,
+          'salary': salary,
+          'description': description,
+          'requirements': requirements,
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return _cleanAndDecode(response.body);
+      } else {
+        print("Error in createJobAndGetCheckoutUrl: ${response.statusCode} - ${response.body}");
+        return null;
+      }
+    } catch (e) {
+      print("Exception in createJobAndGetCheckoutUrl: $e");
+      return null;
+    }
+  }
+
+  /// Get all active paid jobs from the server
+  static Future<List<dynamic>?> getActiveJobs() async {
+    try {
+      final token = await getToken();
+      final response = await http.get(
+        Uri.parse('$_host/api/jobs'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final res = _cleanAndDecode(response.body);
+        if (res != null && res['success'] == true) {
+          return res['data'] as List<dynamic>;
+        }
+      }
+      return null;
+    } catch (e) {
+      print("Exception in getActiveJobs: $e");
+      return null;
+    }
+  }
+
+  /// Get Company Dashboard details dynamically
+  static Future<Map<String, dynamic>?> getCompanyDashboardData() async {
+    try {
+      final token = await getToken();
+      final response = await http.get(
+        Uri.parse('$_host/api/company/dashboard'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return _cleanAndDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      print("Exception in getCompanyDashboardData: $e");
+      return null;
+    }
+  }
 }

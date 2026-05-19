@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/local_storage_service.dart';
+import '../services/ai_api_service.dart';
 
 class CompanyDashboard extends StatefulWidget {
   const CompanyDashboard({super.key});
@@ -11,20 +12,50 @@ class CompanyDashboard extends StatefulWidget {
 
 class _CompanyDashboardState extends State<CompanyDashboard> {
   String companyName = "Tech Innovators Inc.";
+  String activeJobsCount = "0";
+  String suggestedCandidatesCount = "84";
+  String stripeSpend = "\$0";
+  List<dynamic> topCandidates = [];
+  List<dynamic> recentJobs = [];
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    _loadDashboardData();
   }
 
-  Future<void> _loadProfile() async {
+  Future<void> _loadDashboardData() async {
+    // Quick load company profile name from local storage first for instant feedback
     final profile = await LocalStorageService.getUserProfile();
-    setState(() {
-      companyName = profile['name'] ?? "Tech Innovators Inc.";
-      isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        companyName = profile['name'] ?? "Company Partner";
+      });
+    }
+
+    // Fetch live backend metrics
+    final data = await AiApiService.getCompanyDashboardData();
+    if (data != null && data['success'] == true) {
+      final payload = data['data'];
+      if (mounted) {
+        setState(() {
+          companyName = payload['company_name'] ?? companyName;
+          activeJobsCount = (payload['active_jobs_count'] ?? 0).toString();
+          stripeSpend = payload['stripe_spend'] ?? "\$0";
+          suggestedCandidatesCount = (payload['suggested_candidates_count'] ?? 84).toString();
+          topCandidates = payload['top_candidates'] ?? [];
+          recentJobs = payload['recent_jobs'] ?? [];
+          isLoading = false;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -32,30 +63,65 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: SafeArea(
-        child: isLoading 
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context),
-              const SizedBox(height: 24),
-              _buildStatsRow(context),
-              const SizedBox(height: 32),
-              _buildTopMatches(context),
-              const SizedBox(height: 32),
-              _buildActiveJobPostingsHeader(context),
-              const SizedBox(height: 16),
-              _buildRecentJobRow(context, "Senior Flutter Developer", "Posted 2 days ago", "12 AI Matches"),
-              const SizedBox(height: 12),
-              _buildRecentJobRow(context, "Laravel Backend Dev", "Posted 5 days ago", "34 AI Matches"),
-              const SizedBox(height: 12),
-              _buildRecentJobRow(context, "Product Manager", "Posted 1 week ago", "8 AI Matches"),
-              const SizedBox(height: 40),
-            ],
-          ),
-        ),
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
+            : RefreshIndicator(
+                onRefresh: _loadDashboardData,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(context),
+                      const SizedBox(height: 24),
+                      _buildStatsRow(context),
+                      const SizedBox(height: 32),
+                      _buildTopMatches(context),
+                      const SizedBox(height: 32),
+                      _buildActiveJobPostingsHeader(context),
+                      const SizedBox(height: 16),
+                      if (recentJobs.isEmpty)
+                        _buildEmptyJobsState()
+                      else
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: recentJobs.length,
+                          itemBuilder: (context, index) {
+                            final job = recentJobs[index];
+                            String dateStr = "Posted recently";
+                            if (job['created_at'] != null) {
+                              try {
+                                final parsedDate = DateTime.parse(job['created_at']);
+                                final diff = DateTime.now().difference(parsedDate);
+                                if (diff.inDays == 0) {
+                                  dateStr = "Posted today";
+                                } else if (diff.inDays == 1) {
+                                  dateStr = "Posted yesterday";
+                                } else {
+                                  dateStr = "Posted ${diff.inDays} days ago";
+                                }
+                              } catch (_) {}
+                            }
+
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _buildRecentJobRow(
+                                context,
+                                job['title'] ?? 'Job Posting',
+                                dateStr,
+                                job['matches_count'] ?? '0 Matches',
+                                job['is_paid'] ?? false,
+                              ),
+                            );
+                          },
+                        ),
+                      const SizedBox(height: 40),
+                    ],
+                  ),
+                ),
+              ),
       ),
     );
   }
@@ -87,7 +153,7 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
                 ),
                 Text(
                   companyName,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: AppTheme.primaryColor,
@@ -121,15 +187,14 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
     );
   }
 
-
   Widget _buildStatsRow(BuildContext context) {
     return Row(
       children: [
-        _buildStatCard(context, "Active Jobs", "12", Icons.work_outline, Colors.blue, '/activeJobs'),
+        _buildStatCard(context, "Active Jobs", activeJobsCount, Icons.work_outline, Colors.blue, '/activeJobs'),
         const SizedBox(width: 16),
-        _buildStatCard(context, "Suggested Profiles", "84", Icons.people_outline, Colors.orange, '/suggestedProfiles'),
+        _buildStatCard(context, "Suggested Profiles", suggestedCandidatesCount, Icons.people_outline, Colors.orange, '/suggestedProfiles'),
         const SizedBox(width: 16),
-        _buildStatCard(context, "Stripe Spend", "\$420", Icons.payments_outlined, Colors.green, '/billing'),
+        _buildStatCard(context, "Stripe Spend", stripeSpend, Icons.payments_outlined, Colors.green, '/billing'),
       ],
     );
   }
@@ -137,8 +202,9 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
   Widget _buildStatCard(BuildContext context, String title, String count, IconData icon, Color color, String route) {
     return Expanded(
       child: GestureDetector(
-        onTap: () {
-          Navigator.pushNamed(context, route);
+        onTap: () async {
+          await Navigator.pushNamed(context, route);
+          _loadDashboardData();
         },
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -160,7 +226,7 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
               Text(
                 count,
                 style: const TextStyle(
-                  fontSize: 22,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),
@@ -194,97 +260,112 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
           ),
         ),
         const SizedBox(height: 16),
-        SizedBox(
-          height: 180,
-          child: ListView(
-            clipBehavior: Clip.none,
-            scrollDirection: Axis.horizontal,
-            children: [
-              _buildCandidateCard(context, "Sarah Jenkins", "Senior Flutter Dev", "98%"),
-              _buildCandidateCard(context, "Ahmed Ali", "Backend Engineer", "94%"),
-              _buildCandidateCard(context, "Emily Chen", "UI/UX Designer", "91%"),
-            ],
-          ),
-        ),
+        topCandidates.isEmpty
+            ? Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Center(
+                  child: Text(
+                    "No candidates found yet.",
+                    style: TextStyle(color: Colors.black54),
+                  ),
+                ),
+              )
+            : SizedBox(
+                height: 180,
+                child: ListView.builder(
+                  clipBehavior: Clip.none,
+                  scrollDirection: Axis.horizontal,
+                  itemCount: topCandidates.length,
+                  itemBuilder: (context, index) {
+                    final candidate = topCandidates[index];
+                    return _buildCandidateCard(context, Map<String, dynamic>.from(candidate));
+                  },
+                ),
+              ),
       ],
     );
   }
 
-  Widget _buildCandidateCard(BuildContext context, String name, String role, String match) {
+  Widget _buildCandidateCard(BuildContext context, Map<String, dynamic> candidate) {
+    final name = candidate['name'] ?? 'Candidate';
+    final role = candidate['role'] ?? 'Job Seeker';
+    final match = candidate['match'] ?? '85%';
+
     return GestureDetector(
       onTap: () {
         Navigator.pushNamed(
           context,
           '/candidateProfile',
-          arguments: {
-            'name': name,
-            'role': role,
-            'match': match,
-          },
+          arguments: candidate,
         );
       },
       child: Container(
         width: 140,
         margin: const EdgeInsets.only(right: 16, bottom: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const CircleAvatar(
-            radius: 24,
-            backgroundColor: Color(0xFFE3F2FD),
-            child: Icon(Icons.person, color: Colors.blue),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            role,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 11, color: Colors.black54),
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.auto_awesome, color: Colors.green, size: 12),
-                const SizedBox(width: 4),
-                Text(
-                  match,
-                  style: const TextStyle(
-                    color: Colors.green,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const CircleAvatar(
+              radius: 24,
+              backgroundColor: Color(0xFFE3F2FD),
+              child: Icon(Icons.person, color: Colors.blue),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              role,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 11, color: Colors.black54),
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.auto_awesome, color: Colors.green, size: 12),
+                  const SizedBox(width: 4),
+                  Text(
+                    match,
+                    style: const TextStyle(
+                      color: Colors.green,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          )
-        ],
-      ),
+                ],
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
@@ -302,8 +383,9 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
           ),
         ),
         ElevatedButton.icon(
-          onPressed: () {
-            Navigator.pushNamed(context, '/postJob');
+          onPressed: () async {
+            await Navigator.pushNamed(context, '/postJob');
+            _loadDashboardData();
           },
           icon: const Icon(Icons.add_rounded, size: 16),
           label: const Text("Post New"),
@@ -321,7 +403,24 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
     );
   }
 
-  Widget _buildRecentJobRow(BuildContext context, String title, String subtitle, String badge) {
+  Widget _buildEmptyJobsState() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Center(
+        child: Text(
+          "No recent job postings.",
+          style: TextStyle(color: Colors.black54),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentJobRow(BuildContext context, String title, String subtitle, String badge, bool isPaid) {
     return GestureDetector(
       onTap: () {
         Navigator.pushNamed(
@@ -336,63 +435,85 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
       },
       child: Container(
         padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE3F2FD),
-              borderRadius: BorderRadius.circular(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            child: const Icon(Icons.work_outline_rounded, color: Color(0xFF0052FF)),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(fontSize: 11, color: Colors.black54),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              badge,
-              style: const TextStyle(
-                color: Colors.orange,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isPaid ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.work_outline_rounded,
+                color: isPaid ? Colors.green : Colors.red,
               ),
             ),
-          )
-        ],
-      ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        subtitle,
+                        style: const TextStyle(fontSize: 11, color: Colors.black54),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: isPaid ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          isPaid ? "Paid" : "Pending",
+                          style: TextStyle(
+                            color: isPaid ? Colors.green : Colors.red,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                badge,
+                style: const TextStyle(
+                  color: Colors.orange,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
 }
-
