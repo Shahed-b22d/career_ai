@@ -428,21 +428,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       businessType:
                           selectedRole == 'company'
                               ? (selectedBusinessType == "Other"
-                                  ? otherBusinessTypeController.text
+                                  ? otherBusinessTypeController.text.trim()
                                   : selectedBusinessType)
                               : null,
+                      commercialRegisterFile:
+                          selectedRole == 'company' ? commercialRegisterFile : null,
                     );
 
                     if (mounted) Navigator.pop(context);
 
-                    if (result != null) {
-                      Navigator.pushReplacementNamed(
-                        context,
-                        selectedRole == "job"
-                            ? '/userDashboard'
-                            : '/companyDashboard',
-                      );
-                    }
+                    // register() throws on error, so if we reach here it succeeded
+                    final role = result['user']?['role'] ?? selectedRole;
+                    Navigator.pushReplacementNamed(
+                      context,
+                      role == "job" ? '/userDashboard' : '/companyDashboard',
+                    );
                   } catch (e) {
                     if (mounted) Navigator.pop(context);
                     showError(e.toString());

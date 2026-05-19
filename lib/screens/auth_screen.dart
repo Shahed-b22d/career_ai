@@ -58,12 +58,12 @@ class _AuthAndRoleSelectionWidgetState
 
       if (mounted) Navigator.pop(context); // close loading
 
-      if (result != null) {
-        if (selectedRole == 'company') {
-          Navigator.pushReplacementNamed(context, '/companyDashboard');
-        } else {
-          Navigator.pushReplacementNamed(context, '/userDashboard');
-        }
+      // login() throws on error, if we reach here it succeeded
+      final userRole = result['user']?['role'] ?? selectedRole;
+      if (userRole == 'company') {
+        Navigator.pushReplacementNamed(context, '/companyDashboard');
+      } else {
+        Navigator.pushReplacementNamed(context, '/userDashboard');
       }
     } catch (e) {
       if (mounted) {
