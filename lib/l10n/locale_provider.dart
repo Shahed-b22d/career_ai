@@ -18,7 +18,7 @@ class LocaleProvider extends StatefulWidget {
 class _LocaleProviderState extends State<LocaleProvider> {
   String _locale = 'en';
 
-  Map<String, Map<String, String>> _translations = {
+  final Map<String, Map<String, String>> _translations = {
     'en': {
       'edit_profile': 'Edit Profile',
       'company_profile': 'Company Profile',
@@ -124,9 +124,9 @@ class LocaleController {
   LocaleController._(this._state);
 
   String get locale => _state?._locale ?? 'en';
-  String t(String key) => _state?._translations[_state!._locale]?[key] ?? key;
+  String t(String key) => _state?._translations[_state._locale]?[key] ?? key;
   void setLocale(String l) {
-    if (_state != null) _state!.setLocale(l);
+    if (_state != null) _state.setLocale(l);
   }
 }
 

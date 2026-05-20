@@ -6,6 +6,7 @@ import '../widgets/custom_button.dart';
 import '../widgets/custom_input_field.dart';
 import '../services/ai_api_service.dart';
 import '../services/local_storage_service.dart';
+import 'complaint_screen.dart';
 
 class PersonProfile extends StatefulWidget {
   const PersonProfile({super.key});
@@ -22,7 +23,26 @@ class _PersonProfileState extends State<PersonProfile>
   final emailController = TextEditingController();
   final phoneController = TextEditingController();
 
+  String? selectedGovernorate;
+  final List<String> syrianGovernorates = [
+    "Damascus / دمشق",
+    "Rif Dimashq / ريف دمشق",
+    "Aleppo / حلب",
+    "Homs / حمص",
+    "Hama / حماة",
+    "Lattakia / اللاذقية",
+    "Tartus / طرطوس",
+    "Idlib / إدلب",
+    "Daraa / درعا",
+    "As-Suwayda / السويداء",
+    "Quneitra / القنيطرة",
+    "Deir ez-Zor / دير الزور",
+    "Al-Hasakah / الحسكة",
+    "Ar-Raqqah / الرقة",
+  ];
+
   File? _image;
+  String? avatarUrl;
 
   late AnimationController _controller;
   late Animation<double> fade;
@@ -53,6 +73,11 @@ class _PersonProfileState extends State<PersonProfile>
       nameController.text = profile['name'] ?? "";
       emailController.text = profile['email'] ?? "";
       phoneController.text = profile['phone'] ?? "";
+      selectedGovernorate = profile['governorate'];
+      if (selectedGovernorate != null && !syrianGovernorates.contains(selectedGovernorate)) {
+        selectedGovernorate = null;
+      }
+      avatarUrl = profile['avatar'];
     });
   }
 
@@ -83,6 +108,13 @@ class _PersonProfileState extends State<PersonProfile>
     return RegExp(r'^[0-9]{10}$').hasMatch(phone);
   }
 
+  Future<void> logout() async {
+    await AiApiService.logout();
+    if (mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,18 +140,91 @@ class _PersonProfileState extends State<PersonProfile>
                 child: Column(
                   children: [
 
+                    /// 🔥 Top Row (Back)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          /// ⬅️ Back
+                          IconButton(
+                            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
                     Stack(
                       children: [
-                        CircleAvatar(
-                          radius: 50,
-                          backgroundColor: Colors.white,
-                          child: CircleAvatar(
-                            radius: 46,
-                            backgroundImage:
-                                _image != null ? FileImage(_image!) : null,
-                            child: _image == null
-                                ? const Icon(Icons.person, size: 40)
-                                : null,
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: PopupMenuButton<String>(
+                            offset: const Offset(0, 50),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            itemBuilder: (context) => [
+                              const PopupMenuItem(
+                                value: "edit",
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.edit, color: Colors.blue),
+                                    SizedBox(width: 10),
+                                    Text("Edit Profile"),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: "complaints",
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.report_problem, color: Colors.orange),
+                                    SizedBox(width: 10),
+                                    Text("Complaints / شكاوي"),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: "logout",
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.logout, color: Colors.red),
+                                    SizedBox(width: 10),
+                                    Text("Logout"),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            onSelected: (value) async {
+                              if (value == "logout") {
+                                await logout();
+                              } else if (value == "complaints") {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const ComplaintScreen()),
+                                );
+                              } else if (value == "edit") {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text("You are already in edit mode! / أنت في وضع التعديل بالفعل")),
+                                );
+                              }
+                            },
+                            child: CircleAvatar(
+                              radius: 46,
+                              backgroundImage: _image != null
+                                  ? FileImage(_image!) as ImageProvider
+                                  : (avatarUrl != null ? NetworkImage("http://127.0.0.1:8000/storage/$avatarUrl") : null),
+                              child: (_image == null && avatarUrl == null)
+                                  ? const Icon(Icons.person, size: 40)
+                                  : null,
+                            ),
                           ),
                         ),
 
@@ -202,79 +307,75 @@ class _PersonProfileState extends State<PersonProfile>
                                 !isValidPhone(v!) ? "Invalid phone" : null,
                           ),
 
+                          const SizedBox(height: 16),
+
+                          DropdownButtonFormField<String>(
+                            value: selectedGovernorate,
+                            decoration: InputDecoration(
+                              hintText: "Governorate / المحافظة",
+                              prefixIcon: const Icon(Icons.location_on_outlined, color: AppTheme.primaryColor),
+                              filled: true,
+                              fillColor: AppTheme.cardColor,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            items: syrianGovernorates.map((gov) {
+                              return DropdownMenuItem(
+                                value: gov,
+                                child: Text(gov),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                selectedGovernorate = value;
+                              });
+                            },
+                          ),
+
                           const SizedBox(height: 30),
 
                           // 🔥 SAVE
                           CustomButton(
                             text: "Save Changes",
-                            onPressed: () {
+                            onPressed: () async {
                               if (!_formKey.currentState!.validate()) return;
 
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Saved successfully ✅"),
-                                  backgroundColor: Colors.green,
-                                ),
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (_) => const Center(child: CircularProgressIndicator()),
                               );
+
+                              try {
+                                await AiApiService.updateProfile(
+                                  name: nameController.text,
+                                  email: emailController.text,
+                                  phone: phoneController.text,
+                                  governorate: selectedGovernorate,
+                                  avatarFile: _image,
+                                );
+                                if (mounted) Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Saved successfully ✅"),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              } catch (e) {
+                                if (mounted) Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(e.toString()),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
                             },
                           ),
 
                           const SizedBox(height: 16),
-
-                          // 🔥 LOGOUT
-                          OutlinedButton.icon(
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  title: const Text("Logout"),
-                                  content: const Text(
-                                      "Are you sure you want to logout?"),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context),
-                                      child: const Text("Cancel"),
-                                    ),
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.red,
-                                      ),
-                                      onPressed: () async {
-                                        Navigator.pop(context);
-                                        await AiApiService.logout();
-                                        if (mounted) {
-                                          Navigator.pushNamedAndRemoveUntil(
-                                            context,
-                                            '/login',
-                                            (route) => false,
-                                          );
-                                        }
-                                      },
-
-                                      child: const Text("Logout"),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.logout, color: Colors.red),
-                            label: const Text(
-                              "Logout",
-                              style: TextStyle(color: Colors.red),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize:
-                                  const Size(double.infinity, 55),
-                              side: const BorderSide(color: Colors.red),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                            ),
-                          ),
 
                           const SizedBox(height: 80),
                         ],

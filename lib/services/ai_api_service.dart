@@ -1,14 +1,16 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'local_storage_service.dart';
 
 class AiApiService {
   // 10.0.2.2 = localhost for Android Emulator
   // Change to your machine's local IP (e.g. 192.168.x.x) for a real device
-  static const String _host    = 'http://10.0.2.2:8000';
+  static const String _host    = 'http://127.0.0.1:8000';
   static const String baseUrl  = '$_host/api/ai';
   static const String authUrl  = '$_host/api/auth';
 
@@ -120,9 +122,11 @@ class AiApiService {
             name:         data['user']['name']          ?? name,
             email:        data['user']['email']         ?? email,
             role:         data['user']['role']          ?? role,
-            businessType: data['user']['business_type'] ?? businessType,
+            businessType: data['user']['business_type'] ?? data['user']['company']?['business_type'] ?? businessType,
             phone:        data['user']['phone']         ?? phone,
-            governorate:  data['user']['governorate']    ?? governorate,
+            governorate:  data['user']['governorate']   ?? governorate,
+            avatar:       data['user']['avatar_path'],
+            description:  data['user']['company']?['description'],
           );
         }
         return data;
@@ -171,8 +175,79 @@ class AiApiService {
             name:         data['user']['name'],
             email:        data['user']['email'],
             role:         data['user']['role'],
-            businessType: data['user']['business_type'],
+            businessType: data['user']['business_type'] ?? data['user']['company']?['business_type'],
             phone:        data['user']['phone'],
+            governorate:  data['user']['governorate'],
+            avatar:       data['user']['avatar_path'],
+            description:  data['user']['company']?['description'],
+          );
+        }
+        return data;
+      } else {
+        String errorMsg = response.body;
+        try {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map && decoded.containsKey('message')) {
+            errorMsg = decoded['message'];
+          }
+        } catch (_) {}
+        throw Exception(errorMsg);
+      }
+    } catch (e) {
+      throw Exception(e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  // ─── 2.5 Auth: Update Profile ───────────────────────────────────────────────
+  static Future<Map<String, dynamic>> updateProfile({
+    String? name,
+    String? email,
+    String? phone,
+    String? governorate,
+    String? businessType,
+    String? description,
+    File? avatarFile,
+  }) async {
+    try {
+      final token = await getToken();
+      if (token == null) throw Exception("Unauthorized");
+
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$authUrl/profile/update'),
+      );
+
+      request.headers['Accept'] = 'application/json';
+      request.headers['Authorization'] = 'Bearer $token';
+
+      if (name != null) request.fields['name'] = name;
+      if (email != null) request.fields['email'] = email;
+      if (phone != null) request.fields['phone'] = phone;
+      if (governorate != null) request.fields['governorate'] = governorate;
+      if (businessType != null) request.fields['business_type'] = businessType;
+      if (description != null) request.fields['description'] = description;
+
+      if (avatarFile != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath('avatar', avatarFile.path),
+        );
+      }
+
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+
+      if (response.statusCode == 200) {
+        final data = _cleanAndDecode(response.body) as Map<String, dynamic>;
+        if (data['user'] != null) {
+          await LocalStorageService.saveUserProfile(
+            name: data['user']['name'],
+            email: data['user']['email'],
+            role: data['user']['role'],
+            businessType: data['user']['business_type'] ?? data['user']['company']?['business_type'],
+            phone: data['user']['phone'],
+            governorate: data['user']['governorate'],
+            avatar: data['user']['avatar_path'],
+            description: data['user']['company']?['description'],
           );
         }
         return data;
@@ -215,6 +290,45 @@ class AiApiService {
     } catch (e) {
       print("Exception in logout: $e");
       return false;
+    }
+  }
+
+  // 4. Submit Complaint
+  static Future<Map<String, dynamic>> submitComplaint({
+    required String subject,
+    required String message,
+  }) async {
+    try {
+      final token = await getToken();
+      if (token == null) throw Exception("Unauthorized");
+
+      final response = await http.post(
+        Uri.parse('$_host/api/complaints'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'subject': subject,
+          'message': message,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        return _cleanAndDecode(response.body);
+      } else {
+        String errorMsg = response.body;
+        try {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map && decoded.containsKey('message')) {
+            errorMsg = decoded['message'];
+          }
+        } catch (_) {}
+        throw Exception(errorMsg);
+      }
+    } catch (e) {
+      throw Exception(e.toString().replaceFirst('Exception: ', ''));
     }
   }
 

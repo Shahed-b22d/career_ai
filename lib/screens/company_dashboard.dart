@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/local_storage_service.dart';
 import '../services/ai_api_service.dart';
+import 'complaint_screen.dart';
 
 class CompanyDashboard extends StatefulWidget {
   const CompanyDashboard({super.key});
@@ -18,6 +19,7 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
   List<dynamic> topCandidates = [];
   List<dynamic> recentJobs = [];
   bool isLoading = true;
+  String? avatarUrl;
 
   @override
   void initState() {
@@ -31,6 +33,7 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
     if (mounted) {
       setState(() {
         companyName = profile['name'] ?? "Company Partner";
+        avatarUrl = profile['avatar'];
       });
     }
 
@@ -171,14 +174,63 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
                 Navigator.pushNamed(context, '/notifications');
               },
             ),
-            GestureDetector(
-              onTap: () {
-                Navigator.pushNamed(context, '/companyProfile');
+            PopupMenuButton<String>(
+              offset: const Offset(0, 50),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: "edit",
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit, color: Colors.blue),
+                      SizedBox(width: 10),
+                      Text("Edit Profile"),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: "complaints",
+                  child: Row(
+                    children: [
+                      Icon(Icons.report_problem, color: Colors.orange),
+                      SizedBox(width: 10),
+                      Text("Complaints / شكاوي"),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: "logout",
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, color: Colors.red),
+                      SizedBox(width: 10),
+                      Text("Logout"),
+                    ],
+                  ),
+                ),
+              ],
+              onSelected: (value) async {
+                if (value == "logout") {
+                  await AiApiService.logout();
+                  if (mounted) Navigator.pushReplacementNamed(context, '/login');
+                } else if (value == "complaints") {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ComplaintScreen()),
+                  );
+                } else if (value == "edit") {
+                  Navigator.pushNamed(context, '/companyProfile').then((_) => _loadDashboardData());
+                }
               },
-              child: const CircleAvatar(
+              child: CircleAvatar(
                 radius: 20,
-                backgroundColor: Color(0xFFE3F2FD),
-                child: Icon(Icons.business_rounded, color: AppTheme.primaryColor, size: 20),
+                backgroundColor: const Color(0xFFE3F2FD),
+                backgroundImage: avatarUrl != null
+                    ? NetworkImage("http://127.0.0.1:8000/storage/$avatarUrl")
+                    : null,
+                child: avatarUrl == null
+                    ? const Icon(Icons.business_rounded, color: AppTheme.primaryColor, size: 20)
+                    : null,
               ),
             ),
           ],

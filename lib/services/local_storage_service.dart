@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalStorageService {
@@ -14,6 +13,8 @@ class LocalStorageService {
   static const String _keyBusinessType = "business_type";
   static const String _keyUserPhone = "user_phone";
   static const String _keyUserGovernorate = "user_governorate";
+  static const String _keyUserAvatar = "user_avatar";
+  static const String _keyCompanyDescription = "company_description";
 
   // --- Profile Methods ---
 
@@ -24,6 +25,8 @@ class LocalStorageService {
     String? businessType,
     String? phone,
     String? governorate,
+    String? avatar,
+    String? description,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyUserName, name);
@@ -38,6 +41,12 @@ class LocalStorageService {
     if (governorate != null) {
       await prefs.setString(_keyUserGovernorate, governorate);
     }
+    if (avatar != null) {
+      await prefs.setString(_keyUserAvatar, avatar);
+    }
+    if (description != null) {
+      await prefs.setString(_keyCompanyDescription, description);
+    }
   }
 
   static Future<Map<String, String?>> getUserProfile() async {
@@ -49,6 +58,8 @@ class LocalStorageService {
       'businessType': prefs.getString(_keyBusinessType),
       'phone': prefs.getString(_keyUserPhone),
       'governorate': prefs.getString(_keyUserGovernorate),
+      'avatar': prefs.getString(_keyUserAvatar),
+      'description': prefs.getString(_keyCompanyDescription),
     };
   }
 
@@ -147,5 +158,7 @@ class LocalStorageService {
     await prefs.remove(_keyBusinessType);
     await prefs.remove(_keyUserPhone);
     await prefs.remove(_keyUserGovernorate);
+    await prefs.remove(_keyUserAvatar);
+    await prefs.remove(_keyCompanyDescription);
   }
 }

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_button.dart';
 import '../services/ai_api_service.dart';
 import 'quiz_screen.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class RoadmapScreen extends StatefulWidget {
   final String targetJob;
@@ -210,7 +211,7 @@ class _RoadmapScreenState extends State<RoadmapScreen> {
                                       String url = course["url"] ?? "";
                                       if (url.isNotEmpty) {
                                         if (!url.startsWith("http://") && !url.startsWith("https://")) {
-                                          url = "https://" + url;
+                                          url = "https://$url";
                                         }
                                         final uri = Uri.parse(url);
                                         try {

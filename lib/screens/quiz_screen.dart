@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_button.dart';
 import '../services/ai_api_service.dart';
@@ -236,7 +237,7 @@ class _QuizScreenState extends State<QuizScreen> {
             Expanded(
               child: ListView.separated(
                 itemCount: question["options"].length,
-                separatorBuilder: (_, __) => const SizedBox(height: 16),
+                separatorBuilder: (_, _) => const SizedBox(height: 16),
                 itemBuilder: (context, index) {
                   final option = question["options"][index];
                   final isSelected = selectedOption == option;
