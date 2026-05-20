@@ -293,6 +293,66 @@ class AiApiService {
     }
   }
 
+  // 3b. Auth: Forgot Password — يرسل رابط إعادة التعيين على الإيميل
+  static Future<Map<String, dynamic>> forgotPassword({
+    required String email,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$authUrl/forgot-password'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({'email': email}),
+      );
+
+      final data = _cleanAndDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': data['message'] ?? 'Reset link sent.'};
+      } else {
+        return {'success': false, 'message': data['message'] ?? 'Something went wrong.'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  // 3c. Auth: Reset Password — يحدّث كلمة المرور بالتوكن
+  static Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String token,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$authUrl/reset-password'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email,
+          'token': token,
+          'password': password,
+          'password_confirmation': passwordConfirmation,
+        }),
+      );
+
+      final data = _cleanAndDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': data['message'] ?? 'Password reset.'};
+      } else {
+        return {'success': false, 'message': data['message'] ?? 'Invalid or expired token.'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
   // 4. Submit Complaint
   static Future<Map<String, dynamic>> submitComplaint({
     required String subject,
@@ -618,6 +678,32 @@ class AiApiService {
       return null;
     } catch (e) {
       print("Exception in getCompanyDashboardData: $e");
+      return null;
+    }
+  }
+
+  /// Get ALL suggested candidates for the Suggested Profiles screen
+  static Future<List<dynamic>?> getSuggestedCandidates() async {
+    try {
+      final token = await getToken();
+      final response = await http.get(
+        Uri.parse('$_host/api/candidates/suggested'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final res = _cleanAndDecode(response.body);
+        if (res != null && res['success'] == true) {
+          return res['data'] as List<dynamic>;
+        }
+      }
+      return null;
+    } catch (e) {
+      print("Exception in getSuggestedCandidates: $e");
       return null;
     }
   }

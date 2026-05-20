@@ -1,7 +1,48 @@
 import 'package:flutter/material.dart';
+import '../services/ai_api_service.dart';
+import '../theme/app_theme.dart';
 
-class SuggestedProfilesScreen extends StatelessWidget {
+class SuggestedProfilesScreen extends StatefulWidget {
   const SuggestedProfilesScreen({super.key});
+
+  @override
+  State<SuggestedProfilesScreen> createState() => _SuggestedProfilesScreenState();
+}
+
+class _SuggestedProfilesScreenState extends State<SuggestedProfilesScreen> {
+  List<dynamic> _allCandidates   = [];
+  List<dynamic> _filtered        = [];
+  bool _isLoading                = true;
+  String _searchQuery            = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCandidates();
+  }
+
+  Future<void> _loadCandidates() async {
+    setState(() => _isLoading = true);
+    final data = await AiApiService.getSuggestedCandidates();
+    if (mounted) {
+      setState(() {
+        _allCandidates = data ?? [];
+        _filtered      = _allCandidates;
+        _isLoading     = false;
+      });
+    }
+  }
+
+  void _onSearch(String query) {
+    setState(() {
+      _searchQuery = query.toLowerCase();
+      _filtered = _allCandidates.where((c) {
+        final name = (c['name'] ?? '').toLowerCase();
+        final role = (c['role'] ?? '').toLowerCase();
+        return name.contains(_searchQuery) || role.contains(_searchQuery);
+      }).toList();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -9,7 +50,7 @@ class SuggestedProfilesScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text(
-          "Suggested Profiles",
+          'Suggested Profiles',
           style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
@@ -17,51 +58,158 @@ class SuggestedProfilesScreen extends StatelessWidget {
         iconTheme: const IconThemeData(color: Colors.black87),
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {},
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _loadCandidates,
+            tooltip: 'Refresh',
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
+      body: Column(
         children: [
-          const Text(
-            "All AI Matches across your jobs",
-            style: TextStyle(fontSize: 16, color: Colors.black54),
+          // ─── Search Bar ───────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+            child: TextField(
+              onChanged: _onSearch,
+              decoration: InputDecoration(
+                hintText: 'Search by name or role...',
+                prefixIcon: const Icon(Icons.search, color: AppTheme.primaryColor),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.grey),
+                        onPressed: () {
+                          _onSearch('');
+                          FocusScope.of(context).unfocus();
+                        },
+                      )
+                    : null,
+              ),
+            ),
           ),
-          const SizedBox(height: 24),
-          _buildCandidateCard(context, "Sarah Jenkins", "Senior Flutter Dev", "98%"),
-          _buildCandidateCard(context, "Ahmed Ali", "Backend Engineer", "94%"),
-          _buildCandidateCard(context, "Emily Chen", "UI/UX Designer", "91%"),
-          _buildCandidateCard(context, "Michael Scott", "Product Manager", "88%"),
-          _buildCandidateCard(context, "John Doe", "Laravel Backend Dev", "85%"),
+
+          const SizedBox(height: 12),
+
+          // ─── Count Label ─────────────────────────────────────────────
+          if (!_isLoading)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                children: [
+                  Text(
+                    'All AI Matches across your jobs',
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${_filtered.length} found',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          const SizedBox(height: 12),
+
+          // ─── Body ────────────────────────────────────────────────────
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
+                : _filtered.isEmpty
+                    ? _buildEmptyState()
+                    : RefreshIndicator(
+                        onRefresh: _loadCandidates,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                          itemCount: _filtered.length,
+                          itemBuilder: (context, index) {
+                            return _buildCandidateCard(context, _filtered[index]);
+                          },
+                        ),
+                      ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildCandidateCard(BuildContext context, String name, String role, String matchScore) {
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.people_outline, size: 72, color: Colors.grey.shade300),
+          const SizedBox(height: 16),
+          Text(
+            _searchQuery.isNotEmpty
+                ? 'No results for "$_searchQuery"'
+                : 'No candidates yet',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade500,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Candidates appear here once they upload their CVs.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCandidateCard(BuildContext context, dynamic candidate) {
+    final name       = candidate['name']  ?? 'Candidate';
+    final role       = candidate['role']  ?? 'Developer';
+    final matchScore = candidate['match'] ?? '85%';
+    final matchInt   = int.tryParse(matchScore.replaceAll('%', '')) ?? 0;
+
+    Color matchColor;
+    if (matchInt >= 90) {
+      matchColor = Colors.green;
+    } else if (matchInt >= 80) {
+      matchColor = Colors.orange;
+    } else {
+      matchColor = Colors.blue;
+    }
+
     return GestureDetector(
       onTap: () {
         Navigator.pushNamed(
           context,
           '/candidateProfile',
-          arguments: {
-            'name': name,
-            'role': role,
-            'match': matchScore,
-          },
+          arguments: Map<String, dynamic>.from(candidate),
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
+        margin: const EdgeInsets.only(bottom: 14),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withOpacity(0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -69,42 +217,63 @@ class SuggestedProfilesScreen extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const CircleAvatar(
+            // Avatar
+            CircleAvatar(
               radius: 28,
-              backgroundColor: Color(0xFFE3F2FD),
-              child: Icon(Icons.person, color: Colors.blue, size: 28),
+              backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+              child: Text(
+                name.isNotEmpty ? name[0].toUpperCase() : '?',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
             ),
+
             const SizedBox(width: 16),
+
+            // Name & Role
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: Colors.black87,
+                    ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   Text(
                     role,
-                    style: const TextStyle(fontSize: 13, color: Colors.black54),
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
                   ),
                 ],
               ),
             ),
+
+            // Match Badge
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
+                color: matchColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.auto_awesome, color: Colors.green, size: 14),
+                  Icon(Icons.auto_awesome, color: matchColor, size: 13),
                   const SizedBox(width: 4),
                   Text(
                     matchScore,
-                    style: const TextStyle(color: Colors.green, fontSize: 13, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: matchColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
