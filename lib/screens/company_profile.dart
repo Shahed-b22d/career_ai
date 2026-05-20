@@ -1,11 +1,14 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+
+import '../services/ai_api_service.dart';
+import '../services/local_storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_input_field.dart';
-import '../services/ai_api_service.dart';
-import '../services/local_storage_service.dart';
+import 'complaint_screen.dart';
 
 class CompanyProfileScreen extends StatefulWidget {
   const CompanyProfileScreen({super.key});
@@ -24,9 +27,28 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
   final phoneController = TextEditingController();
   final descriptionController = TextEditingController();
 
+  String? selectedGovernorate;
+  final List<String> syrianGovernorates = [
+    "Damascus / دمشق",
+    "Rif Dimashq / ريف دمشق",
+    "Aleppo / حلب",
+    "Homs / حمص",
+    "Hama / حماة",
+    "Lattakia / اللاذقية",
+    "Tartus / طرطوس",
+    "Idlib / إدلب",
+    "Daraa / درعا",
+    "As-Suwayda / السويداء",
+    "Quneitra / القنيطرة",
+    "Deir ez-Zor / دير الزور",
+    "Al-Hasakah / الحسكة",
+    "Ar-Raqqah / الرقة",
+  ];
+
   String workType = "IT";
 
   File? _image;
+  String? avatarUrl;
 
   late AnimationController _controller;
   late Animation<double> fade;
@@ -58,6 +80,12 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
       emailController.text = profile['email'] ?? "";
       phoneController.text = profile['phone'] ?? "";
       workType = profile['businessType'] ?? "IT";
+      selectedGovernorate = profile['governorate'];
+      if (selectedGovernorate != null && !syrianGovernorates.contains(selectedGovernorate)) {
+        selectedGovernorate = null;
+      }
+      descriptionController.text = profile['description'] ?? "";
+      avatarUrl = profile['avatar'];
     });
   }
 
@@ -122,50 +150,16 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
                 child: Column(
                   children: [
 
-                    /// 🔥 Top Row (Back + Menu)
+                    /// 🔥 Top Row (Back)
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment: MainAxisAlignment.start,
                         children: [
-
                           /// ⬅️ Back
                           IconButton(
                             icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
                             onPressed: () => Navigator.pop(context),
-                          ),
-
-                          /// ⋮ Menu
-                          PopupMenuButton(
-                            icon: const Icon(Icons.more_vert, color: Colors.white),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            itemBuilder: (context) => [
-                              const PopupMenuItem(
-                                value: "edit",
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.edit, color: Colors.blue),
-                                    SizedBox(width: 10),
-                                    Text("Edit Profile"),
-                                  ],
-                                ),
-                              ),
-                              const PopupMenuItem(
-                                value: "logout",
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.logout, color: Colors.red),
-                                    SizedBox(width: 10),
-                                    Text("Logout"),
-                                  ],
-                                ),
-                              ),
-                            ],
-                            onSelected: (value) {
-                              if (value == "logout") logout();
-                            },
                           ),
                         ],
                       ),
@@ -182,13 +176,67 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
                             color: Colors.white,
                             shape: BoxShape.circle,
                           ),
-                          child: CircleAvatar(
-                            radius: 50,
-                            backgroundColor: AppTheme.backgroundColor,
-                            backgroundImage: _image != null ? FileImage(_image!) : null,
-                            child: _image == null
-                                ? const Icon(Icons.business, size: 50, color: AppTheme.textSecondaryColor)
-                                : null,
+                          child: PopupMenuButton<String>(
+                            offset: const Offset(0, 50),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            itemBuilder: (context) => [
+                              const PopupMenuItem(
+                                value: "edit",
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.edit, color: Colors.blue),
+                                    SizedBox(width: 10),
+                                    Text("Edit Profile"),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: "complaints",
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.report_problem, color: Colors.orange),
+                                    SizedBox(width: 10),
+                                    Text("Complaints / شكاوي"),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: "logout",
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.logout, color: Colors.red),
+                                    SizedBox(width: 10),
+                                    Text("Logout"),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            onSelected: (value) {
+                              if (value == "logout") {
+                                logout();
+                              } else if (value == "complaints") {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const ComplaintScreen()),
+                                );
+                              } else if (value == "edit") {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text("You are already in edit mode! / أنت في وضع التعديل بالفعل")),
+                                );
+                              }
+                            },
+                            child: CircleAvatar(
+                              radius: 50,
+                              backgroundColor: AppTheme.backgroundColor,
+                              backgroundImage: _image != null
+                                  ? FileImage(_image!) as ImageProvider
+                                  : (avatarUrl != null ? NetworkImage("http://127.0.0.1:8000/storage/$avatarUrl") : null),
+                              child: (_image == null && avatarUrl == null)
+                                  ? const Icon(Icons.business, size: 50, color: AppTheme.textSecondaryColor)
+                                  : null,
+                            ),
                           ),
                         ),
                         Positioned(
@@ -263,9 +311,36 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
 
                           const SizedBox(height: 16),
 
+                          DropdownButtonFormField<String>(
+                            value: selectedGovernorate,
+                            decoration: InputDecoration(
+                              hintText: "Governorate / المحافظة",
+                              prefixIcon: const Icon(Icons.location_on_outlined, color: AppTheme.primaryColor),
+                              filled: true,
+                              fillColor: AppTheme.cardColor,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            items: syrianGovernorates.map((gov) {
+                              return DropdownMenuItem(
+                                value: gov,
+                                child: Text(gov),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                selectedGovernorate = value;
+                              });
+                            },
+                          ),
+
+                          const SizedBox(height: 16),
+
                           /// 🔥 Dropdown أنيق
                           DropdownButtonFormField<String>(
-                            value: workType,
+                            initialValue: workType,
                             decoration: InputDecoration(
                               hintText: "Work Type",
                               prefixIcon: const Icon(Icons.work_outline, color: AppTheme.primaryColor),
@@ -307,13 +382,39 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
 
                           CustomButton(
                             text: "Save Changes",
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Updated Successfully ✅"),
-                                  backgroundColor: Colors.green,
-                                ),
+                            onPressed: () async {
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (_) => const Center(child: CircularProgressIndicator()),
                               );
+
+                              try {
+                                await AiApiService.updateProfile(
+                                  name: nameController.text,
+                                  email: emailController.text,
+                                  phone: phoneController.text,
+                                  governorate: selectedGovernorate,
+                                  businessType: workType,
+                                  description: descriptionController.text,
+                                  avatarFile: _image,
+                                );
+                                if (mounted) Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Updated Successfully ✅"),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              } catch (e) {
+                                if (mounted) Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(e.toString()),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
                             },
                           ),
 

@@ -1,10 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+
+import '../services/ai_api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_input_field.dart';
-import '../services/ai_api_service.dart';
 
 class AuthAndRoleSelectionWidget extends StatefulWidget {
   const AuthAndRoleSelectionWidget({super.key});
@@ -101,11 +102,6 @@ class _AuthAndRoleSelectionWidgetState
             ),
           );
         }
-        return;
-      }
-     
-      if (googleUser == null) {
-        if (mounted) Navigator.pop(context);
         return;
       }
 

@@ -5,6 +5,7 @@ import '../services/ai_api_service.dart';
 import 'roadmap_screen.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
+import 'complaint_screen.dart';
 
 class UserDashboard extends StatefulWidget {
   const UserDashboard({super.key});
@@ -20,6 +21,7 @@ class _UserDashboardState extends State<UserDashboard> {
   String userName = "Career Trainee";
   String userDataText = "";
   bool isLoading = true;
+  String? avatarUrl;
 
   Map<String, dynamic>? activeRoadmap;
   double roadmapProgress = 0.0;
@@ -71,6 +73,7 @@ class _UserDashboardState extends State<UserDashboard> {
           missingSkills = List<String>.from(data['missingSkills'] ?? []);
           userDataText = data['cvText'] ?? "";
           userName = profile['name'] ?? "Career Trainee";
+          avatarUrl = profile['avatar'];
           
           if (roadmapRes != null && roadmapRes['success'] == true) {
             activeRoadmap = roadmapRes['data'];
@@ -155,14 +158,63 @@ class _UserDashboardState extends State<UserDashboard> {
             ),
           ],
         ),
-        GestureDetector(
-          onTap: () {
-            Navigator.pushNamed(context, '/personProfile');
+        PopupMenuButton<String>(
+          offset: const Offset(0, 50),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: "edit",
+              child: Row(
+                children: [
+                  Icon(Icons.edit, color: Colors.blue),
+                  SizedBox(width: 10),
+                  Text("Edit Profile"),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: "complaints",
+              child: Row(
+                children: [
+                  Icon(Icons.report_problem, color: Colors.orange),
+                  SizedBox(width: 10),
+                  Text("Complaints / شكاوي"),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: "logout",
+              child: Row(
+                children: [
+                  Icon(Icons.logout, color: Colors.red),
+                  SizedBox(width: 10),
+                  Text("Logout"),
+                ],
+              ),
+            ),
+          ],
+          onSelected: (value) async {
+            if (value == "logout") {
+              await AiApiService.logout();
+              if (mounted) Navigator.pushReplacementNamed(context, '/login');
+            } else if (value == "complaints") {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ComplaintScreen()),
+              );
+            } else if (value == "edit") {
+              Navigator.pushNamed(context, '/personProfile').then((_) => _loadData());
+            }
           },
-          child: const CircleAvatar(
+          child: CircleAvatar(
             radius: 20,
-            backgroundColor: Color(0xFFE3F2FD),
-            child: Icon(Icons.person, color: Colors.blue),
+            backgroundColor: const Color(0xFFE3F2FD),
+            backgroundImage: avatarUrl != null
+                ? NetworkImage("http://127.0.0.1:8000/storage/$avatarUrl")
+                : null,
+            child: avatarUrl == null
+                ? const Icon(Icons.person, color: Colors.blue)
+                : null,
           ),
         )
       ],

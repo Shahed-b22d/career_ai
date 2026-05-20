@@ -1,13 +1,14 @@
-import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+
+import '../services/ai_api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_input_field.dart';
-import '../services/ai_api_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -91,11 +92,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
       try {
         googleUser = await GoogleSignIn.instance.authenticate();
       } catch (e) {
-        if (mounted) Navigator.pop(context);
-        return;
-      }
-
-      if (googleUser == null) {
         if (mounted) Navigator.pop(context);
         return;
       }
@@ -310,7 +306,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 16),
 
               DropdownButtonFormField<String>(
-                value: selectedGovernorate,
+                initialValue: selectedGovernorate,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.location_on_outlined),
                   hintText: "Select Governorate / اختر المحافظة",
@@ -335,7 +331,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 const SizedBox(height: 16),
 
                 DropdownButtonFormField<String>(
-                  value: selectedBusinessType,
+                  initialValue: selectedBusinessType,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.work_outline_rounded),
                     hintText: "Select Business Type",

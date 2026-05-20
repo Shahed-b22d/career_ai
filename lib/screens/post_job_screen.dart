@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../theme/app_theme.dart';
-import '../widgets/custom_button.dart';
-import '../widgets/custom_input_field.dart';
+
 import '../services/ai_api_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/custom_input_field.dart';
 
 class PostJobScreen extends StatefulWidget {
   const PostJobScreen({super.key});
@@ -157,7 +157,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
 
                 // نوع العمل
                 DropdownButtonFormField<String>(
-                  value: jobType,
+                  initialValue: jobType,
                   dropdownColor: AppTheme.cardColor,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.work_outline_rounded, color: AppTheme.primaryColor),

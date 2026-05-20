@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:share_plus/share_plus.dart';
+
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_button.dart';
 import '../services/ai_api_service.dart';
 import '../services/local_storage_service.dart';
 import 'roadmap_screen.dart';
-import 'package:open_filex/open_filex.dart';
-import 'package:share_plus/share_plus.dart';
 
 class CvAnalysisScreen extends StatefulWidget {
   final Map<String, dynamic>? analysisData;
@@ -309,7 +310,7 @@ class _CvAnalysisScreenState extends State<CvAnalysisScreen> with SingleTickerPr
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: skills.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         return Container(
           padding: const EdgeInsets.all(16),

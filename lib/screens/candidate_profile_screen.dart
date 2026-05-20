@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
+
 import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 
-class CandidateProfileScreen extends StatelessWidget {
+class CandidateProfileScreen extends StatefulWidget {
   const CandidateProfileScreen({super.key});
 
   @override
+  State<CandidateProfileScreen> createState() => _CandidateProfileScreenState();
+}
+
+class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
+  bool isShortlisted = false;
+
+  @override
   Widget build(BuildContext context) {
-    // Extract arguments if passed
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final name = args?['name'] ?? 'Candidate Name';
     final role = args?['role'] ?? 'Role title';
     final matchScore = args?['match'] ?? '90%';
@@ -23,7 +31,10 @@ class CandidateProfileScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           "Candidate Profile",
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -35,22 +46,94 @@ class CandidateProfileScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildProfileHeader(name, role, matchScore),
-            const SizedBox(height: 24),
-            _buildContactInfo(email, phone, governorate),
             const SizedBox(height: 32),
             _buildMatchDetails(skills, missingSkills),
             const SizedBox(height: 40),
             CustomButton(
-              text: "Shortlist & Contact",
+              text: "Shortlist Candidate",
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Shortlisted $name successfully!")),
-                );
+                _showContactInfoSheet(context, name, email, phone, governorate);
               },
             ),
           ],
         ),
       ),
+    );
+  }
+
+  void _showContactInfoSheet(BuildContext context, String name, String email, String phone, String governorate) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      backgroundColor: Colors.white,
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 50,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.green, size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      "$name Shortlisted!",
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                "You can now contact this candidate directly.",
+                style: TextStyle(color: Colors.black54),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppTheme.backgroundColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  children: [
+                    _buildInfoRow(Icons.email_outlined, "Email", email),
+                    const Divider(height: 24),
+                    _buildInfoRow(Icons.phone_android_outlined, "Phone", phone),
+                    const Divider(height: 24),
+                    _buildInfoRow(Icons.location_on_outlined, "Governorate", governorate),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              CustomButton(
+                text: "Close",
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -79,7 +162,11 @@ class CandidateProfileScreen extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             name,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -114,39 +201,6 @@ class CandidateProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildContactInfo(String email, String phone, String governorate) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Contact Information",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
-          ),
-          const SizedBox(height: 16),
-          _buildInfoRow(Icons.email_outlined, "Email", email),
-          const SizedBox(height: 12),
-          _buildInfoRow(Icons.phone_android_outlined, "Phone", phone),
-          const SizedBox(height: 12),
-          _buildInfoRow(Icons.location_on_outlined, "Governorate", governorate),
-        ],
-      ),
-    );
-  }
-
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
       children: [
@@ -154,12 +208,20 @@ class CandidateProfileScreen extends StatelessWidget {
         const SizedBox(width: 12),
         Text(
           "$label: ",
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.black54),
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: Colors.black54,
+          ),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: Colors.black87,
+            ),
           ),
         ),
       ],
@@ -183,20 +245,33 @@ class CandidateProfileScreen extends StatelessWidget {
       children: [
         const Text(
           "AI Gap Analysis (Skills & Gaps)",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
         ),
         const SizedBox(height: 16),
         if (matchedWidgets.isEmpty && missingWidgets.isEmpty)
           const Text(
             "No skills data was extracted from the resume.",
-            style: TextStyle(color: Colors.black54, fontStyle: FontStyle.italic),
+            style: TextStyle(
+              color: Colors.black54,
+              fontStyle: FontStyle.italic,
+            ),
           )
         else ...[
           if (matchedWidgets.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.only(bottom: 8.0, left: 4.0),
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 14),
-              child: Text("Candidate Strengths / Current Skills"),
+              child: Text(
+                "Candidate Strengths / Current Skills",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                  fontSize: 14,
+                ),
+              ),
             ),
             ...matchedWidgets,
             const SizedBox(height: 16),
@@ -204,8 +279,14 @@ class CandidateProfileScreen extends StatelessWidget {
           if (missingWidgets.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.only(bottom: 8.0, left: 4.0),
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red, fontSize: 14),
-              child: Text("Missing Skills / Gap Areas"),
+              child: Text(
+                "Missing Skills / Gap Areas",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red,
+                  fontSize: 14,
+                ),
+              ),
             ),
             ...missingWidgets,
           ],
@@ -221,7 +302,10 @@ class CandidateProfileScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isMatched ? Colors.green.withOpacity(0.3) : Colors.red.withOpacity(0.3)),
+        border: Border.all(
+          color:
+              isMatched ? Colors.green.withOpacity(0.3) : Colors.red.withOpacity(0.3),
+        ),
       ),
       child: Row(
         children: [
@@ -233,13 +317,21 @@ class CandidateProfileScreen extends StatelessWidget {
           Expanded(
             child: Text(
               skill,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
           ),
           Text(
             isMatched ? "Possessed" : "Missing",
-            style: TextStyle(fontSize: 13, color: isMatched ? Colors.green : Colors.red, fontWeight: FontWeight.bold),
-          )
+            style: TextStyle(
+              fontSize: 13,
+              color: isMatched ? Colors.green : Colors.red,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
