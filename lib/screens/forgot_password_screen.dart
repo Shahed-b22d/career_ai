@@ -146,7 +146,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               const SizedBox(height: 10),
 
               Text(
-                "Enter your email and we’ll send you a reset link.",
+                "Enter your email and we'll send you a reset link.",
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
 
