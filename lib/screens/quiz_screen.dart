@@ -20,8 +20,10 @@ class _QuizScreenState extends State<QuizScreen> {
   bool isCompleted = false;
   bool isLoading = true;
   int score = 0;
+  int? quizId; // Store quiz ID for submission
 
   List<Map<String, dynamic>> questions = [];
+  List<String> userAnswers = []; // Store user's answers
   int _loadingTextIndex = 0;
   final List<String> _loadingMessages = [
     "Preparing your assessment...",
@@ -54,6 +56,9 @@ class _QuizScreenState extends State<QuizScreen> {
     try {
       final response = await AiApiService.generateQuiz([widget.skillName]);
       if (response != null && response['data'] != null && response['data']['quiz'] != null) {
+        // Store quiz_id for later submission
+        quizId = response['quiz_id'];
+        
         final quizData = response['data']['quiz'] as List<dynamic>;
         if (quizData.isEmpty) {
              _showError("AI returned an empty quiz. Please try again.");
@@ -63,6 +68,9 @@ class _QuizScreenState extends State<QuizScreen> {
             "options": q['options'] ?? [],
             "answer": q['correct_answer'] ?? ""
           }).toList();
+          
+          // Initialize userAnswers list
+          userAnswers = List.filled(questions.length, '');
         }
       } else {
         String errorMsg = response?['error'] ?? "Failed to generate quiz questions.";
@@ -83,6 +91,10 @@ class _QuizScreenState extends State<QuizScreen> {
   void _nextQuestion() {
     if (selectedOption == null) return;
 
+    // Store user's answer
+    userAnswers[currentQuestionIndex] = selectedOption!;
+
+    // Calculate score locally (for immediate feedback)
     final question = questions[currentQuestionIndex];
     if (selectedOption == question["answer"]) {
       score++;
@@ -94,10 +106,51 @@ class _QuizScreenState extends State<QuizScreen> {
         selectedOption = null;
       });
     } else {
+      // Quiz completed - submit to backend
+      _submitQuizToBackend();
+    }
+  }
+
+  Future<void> _submitQuizToBackend() async {
+    if (quizId == null) {
+      // Fallback to local scoring if no quiz_id
       setState(() {
         isCompleted = true;
       });
+      return;
     }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final response = await AiApiService.submitQuiz(
+        quizId: quizId!,
+        answers: userAnswers,
+      );
+
+      if (response != null && response['success'] == true) {
+        // Use backend score (more accurate)
+        score = (response['correct_answers'] as int?) ?? score;
+        
+        // If passed (70%+), the backend automatically adds skills to completed_skills
+        final passed = response['passed'] as bool? ?? false;
+        
+        if (passed) {
+          // Skill acquired - backend already updated completed_skills
+          await LocalStorageService.acquireSkill(widget.skillName);
+        }
+      }
+    } catch (e) {
+      debugPrint("Quiz Submit Error: $e");
+      // Continue with local score if submission fails
+    }
+
+    setState(() {
+      isLoading = false;
+      isCompleted = true;
+    });
   }
 
   @override
@@ -296,7 +349,7 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Widget _buildResultScreen() {
-    int requiredToPass = (questions.length * 0.6).ceil(); // 60% passing rate
+    int requiredToPass = (questions.length * 0.7).ceil(); // 70% passing rate (matching backend)
     bool passed = score >= requiredToPass;
 
     return Scaffold(
@@ -327,18 +380,15 @@ class _QuizScreenState extends State<QuizScreen> {
               const SizedBox(height: 12),
               Text(
                 passed 
-                  ? "Great job! You scored $score out of ${questions.length} and demonstrated solid knowledge in ${widget.skillName}."
-                  : "You only scored $score out of ${questions.length}. Please review the course materials and try again.",
+                  ? "Great job! You scored $score out of ${questions.length} and demonstrated solid knowledge in ${widget.skillName}.\n\nThis skill has been added to your profile and will appear in your ATS CV!"
+                  : "You scored $score out of ${questions.length}. You need at least 70% to pass. Please review the course materials and try again.",
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16, color: AppTheme.textSecondaryColor, height: 1.5),
               ),
               const SizedBox(height: 48),
               CustomButton(
                 text: passed ? "Continue Roadmap" : "Back to Roadmap",
-                onPressed: () async {
-                  if (passed) {
-                    await LocalStorageService.acquireSkill(widget.skillName);
-                  }
+                onPressed: () {
                   if (mounted) Navigator.pop(context, passed); // Return success or fail
                 },
               ),

@@ -205,7 +205,8 @@ class _CvAnalysisScreenState extends State<CvAnalysisScreen> with SingleTickerPr
                   builder: (_) => const Center(child: CircularProgressIndicator()),
                 );
                 
-                final result = await AiApiService.generateAtsCv(widget.userDataText, [...acquiredSkills, ...missingSkills]);
+                // Updated: Now uses the new API that fetches data automatically
+                final result = await AiApiService.generateAtsCv(includeNewSkills: true);
                 
                 if (mounted) Navigator.pop(context);
                 
