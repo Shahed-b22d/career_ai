@@ -533,8 +533,49 @@ class AiApiService {
     }
   }
 
-  /// 4. Generate ATS CV
-  static Future<String?> generateAtsCv(String userDataText, List<String> newSkills) async {
+  /// 3b. Submit Quiz Answers (NEW)
+  /// Returns the score and whether the user passed (70%+)
+  static Future<Map<String, dynamic>?> submitQuiz({
+    required int quizId,
+    required List<String> answers,
+  }) async {
+    try {
+      final token = await getToken();
+      final url = '$baseUrl/career/quiz/submit';
+      print("DEBUG: Submitting Quiz to $url");
+      
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'quiz_id': quizId,
+          'answers': answers,
+        }),
+      );
+
+      print("DEBUG: Submit Quiz Response Status: ${response.statusCode}");
+      if (response.statusCode == 200) {
+        return _cleanAndDecode(response.body);
+      } else {
+        print("Error in submitQuiz: ${response.statusCode} - ${response.body}");
+        return null;
+      }
+    } catch (e) {
+      print("Exception in submitQuiz: $e");
+      return null;
+    }
+  }
+
+  /// 4. Generate ATS CV (UPDATED - Now fetches data automatically from backend)
+  /// The backend will automatically fetch:
+  /// - Latest CV from user_resumes
+  /// - Acquired skills from user_roadmaps.completed_skills
+  /// - Merge all skills and generate professional ATS CV
+  static Future<String?> generateAtsCv({bool includeNewSkills = true}) async {
     try {
       final token = await getToken();
       final response = await http.post(
@@ -545,8 +586,7 @@ class AiApiService {
           if (token != null) 'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
-          'user_data_text': userDataText,
-          'new_skills': newSkills,
+          'include_new_skills': includeNewSkills,
         }),
       );
 
@@ -559,7 +599,7 @@ class AiApiService {
         print("Error in generateAtsCv: ${response.statusCode} - ${response.body}");
         try {
            final errData = jsonDecode(response.body);
-           return "Error: ${errData['error'] ?? response.statusCode}";
+           return "Error: ${errData['error'] ?? errData['message'] ?? response.statusCode}";
         } catch (_) {
            return "Error: Server returned ${response.statusCode}";
         }

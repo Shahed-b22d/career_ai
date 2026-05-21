@@ -502,23 +502,16 @@ class _UserDashboardState extends State<UserDashboard> {
   }
 
   Future<void> _generateAtsCv(BuildContext context) async {
-    if (userDataText.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please upload a CV first to generate your ATS CV"),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
+    // No need to check userDataText anymore - backend fetches it automatically
+    
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
-    final result = await AiApiService.generateAtsCv(userDataText, [...acquiredSkills, ...missingSkills]);
+    // Updated: Now uses the new API that fetches data automatically from backend
+    final result = await AiApiService.generateAtsCv(includeNewSkills: true);
 
     if (!context.mounted) return;
     Navigator.pop(context);
