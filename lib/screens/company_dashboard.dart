@@ -115,7 +115,7 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
                                 job['title'] ?? 'Job Posting',
                                 dateStr,
                                 job['matches_count'] ?? '0 Matches',
-                                job['is_paid'] ?? false,
+                                job['is_paid'] == true || job['is_paid'] == 1,
                               ),
                             );
                           },

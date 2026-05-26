@@ -106,10 +106,31 @@ class _PostJobScreenState extends State<PostJobScreen> {
       }
     } else {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Failed to initialize payment checkout. Please try again."),
-            backgroundColor: Colors.red,
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Row(
+              children: [
+                Icon(Icons.info_outline_rounded, color: Colors.orange, size: 28),
+                SizedBox(width: 10),
+                Text("Not Published", style: TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: const Text(
+              "Your job post was saved but will not be published until payment is completed.",
+              style: TextStyle(fontSize: 14, height: 1.5),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text("OK", style: TextStyle(color: Colors.white)),
+              ),
+            ],
           ),
         );
       }
