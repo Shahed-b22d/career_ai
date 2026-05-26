@@ -20,7 +20,8 @@ import 'theme/app_theme.dart';
 import 'services/notification_service.dart';
 import 'screens/user_dashboard.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart'; // 🔥 تم الإضافة (مهم جدًا)
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'firebase_options.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'screens/admin_dashboard_pro.dart';
 import 'screens/admin_login_screen.dart';
@@ -29,15 +30,13 @@ import 'package:flutter/foundation.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // تفعيل خدمة الإشعارات
-  await NotificationService().init();
-  await NotificationService().requestPermission();
-
   try {
-    // 🔥 التصحيح فقط هنا (بدون تغيير باقي مشروعك)
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+
+    // Register background FCM handler
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
     // إعداد Google Sign-In
     await GoogleSignIn.instance.initialize(
@@ -45,8 +44,12 @@ void main() async {
       serverClientId: '642116540552-4f8v4824t9m73v3chfs2s17bed1nnf35.apps.googleusercontent.com',
     );
   } catch (e) {
-    debugPrint("Firebase init failed (Please configure Firebase later): $e");
+    debugPrint("Firebase init failed: $e");
   }
+
+  // تفعيل خدمة الإشعارات
+  await NotificationService().init();
+  await NotificationService().requestPermission();
 
   runApp(const MyApp());
 }

@@ -1,0 +1,372 @@
+@startuml CareerAI_ClassDiagram
+' ============================================================
+' Career AI — UML Class Diagram (3-Tier + AI Service Layer)
+' ============================================================
+
+!theme cerulean-outline
+skinparam shadowing true
+skinparam roundcorner 10
+skinparam defaultFontName "Segoe UI"
+skinparam dpi 150
+skinparam classAttributeIconSize 0
+
+skinparam package {
+  BackgroundColor #F8FAFC
+  BorderColor #64748B
+  FontStyle bold
+}
+
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #334155
+  ArrowColor #475569
+}
+
+skinparam interface {
+  BackgroundColor #EFF6FF
+  BorderColor #2563EB
+}
+
+skinparam note {
+  BackgroundColor #FFFBEB
+  BorderColor #D97706
+}
+
+title <size:18><b>Career AI</b></size>\n<size:12>UML Class Diagram — System Architecture</size>\n<size:10>Presentation · Application · Domain · Infrastructure · External AI</size>
+
+' ═══════════════════════════════════════════════════════════
+' LAYER 1 — PRESENTATION (Flutter)
+' ═══════════════════════════════════════════════════════════
+
+package "Presentation Layer\n(Flutter / Dart)" as PL #E8F4FD {
+
+  class MyApp <<Mobile App>> {
+    +build(context): Widget
+    -routes: Map<String, WidgetBuilder>
+  }
+
+  together {
+    class SplashScreen
+    class AuthScreen
+    class SignUpScreen
+    class MainScreen
+    class UserDashboard
+    class CompanyDashboard
+    class UploadCvScreen
+    class CvAnalysisScreen
+    class RoadmapScreen
+    class QuizScreen
+    class PostJobScreen
+    class JobDetailsScreen
+    class ComplaintScreen
+    class AdminDashboardPro
+  }
+
+  class UiScreens <<group>> {
+    SplashScreen
+    AuthScreen
+    UserDashboard
+    CvAnalysisScreen
+    RoadmapScreen
+    QuizScreen
+  }
+
+  class AiApiService <<Service>> {
+    {static} -_host: String
+    {static} -baseUrl: String
+    {static} -authUrl: String
+    --
+    {static} +register(): Future<Map>
+    {static} +login(): Future<Map>
+    {static} +logout(): Future<bool>
+    {static} +analyzeGap(): Future<Map?>
+    {static} +generateRoadmap(): Future<Map?>
+    {static} +generateQuiz(): Future<Map?>
+    {static} +submitQuiz(): Future<Map?>
+    {static} +generateAtsCv(): Future<String?>
+    {static} +getActiveJobs(): Future<List?>
+    {static} -_cleanAndDecode(body): dynamic
+    {static} +getAuthHeaders(): Future<Map>
+  }
+
+  class LocalStorageService <<Service>> {
+    {static} +saveUserProfile()
+    {static} +getUserProfile()
+    {static} +saveAnalysisData()
+    {static} +acquireSkill(skill)
+    {static} +clearData()
+  }
+
+  class NotificationService <<Service>> {
+    +init(): Future<void>
+    +requestPermission(): Future<void>
+  }
+
+  class CustomButton <<Widget>>
+  class CustomInputField <<Widget>>
+  class LoadingOverlay <<Widget>>
+  class AppTheme <<Theme>>
+}
+
+' ═══════════════════════════════════════════════════════════
+' LAYER 2 — APPLICATION (Laravel Controllers)
+' ═══════════════════════════════════════════════════════════
+
+package "Application Layer\n(Laravel HTTP)" as AL #FFF7ED {
+
+  abstract class Controller {
+  }
+
+  class AuthController {
+    +register(Request): JsonResponse
+    +login(Request): JsonResponse
+    +logout(Request): JsonResponse
+    +me(Request): JsonResponse
+    +updateProfile(Request): JsonResponse
+    +forgotPassword(Request): JsonResponse
+    +resetPassword(Request): JsonResponse
+  }
+
+  class AiController {
+    -aiService: AiCareerService
+    --
+    +analyzeGap(Request): JsonResponse
+    +generateRoadmap(Request): JsonResponse
+    +generateQuiz(Request): JsonResponse
+    +submitQuiz(Request): JsonResponse
+    +generateAtsCv(Request): StreamedResponse
+    +getActiveRoadmap(): JsonResponse
+    +updateProgress(Request): JsonResponse
+    +getLatestCv(): JsonResponse
+  }
+
+  class JobController {
+    +postJob(Request): JsonResponse
+    +getActiveJobs(): JsonResponse
+    +getCompanyDashboardData(): JsonResponse
+    +getSuggestedCandidates(): JsonResponse
+    +paymentSuccess(): Response
+    +paymentCancel(): Response
+  }
+
+  class ComplaintController {
+    +store(Request): JsonResponse
+  }
+}
+
+' ═══════════════════════════════════════════════════════════
+' LAYER 3 — DOMAIN (Eloquent Models)
+' ═══════════════════════════════════════════════════════════
+
+package "Domain Layer\n(Eloquent Models)" as DL #F0FDF4 {
+
+  class User <<Entity>> {
+    -id: bigint
+    -name: string
+    -email: string
+    -role: enum
+    -governorate: string
+    --
+    +jobSeeker(): HasOne
+    +company(): HasOne
+    +resume(): HasOne
+  }
+
+  class JobSeeker <<Entity>> {
+    -user_id: bigint
+    -phone: string
+    +user(): BelongsTo
+  }
+
+  class Company <<Entity>> {
+    -user_id: bigint
+    -commercial_register_path: string
+    +user(): BelongsTo
+  }
+
+  class UserResume <<Entity>> {
+    -target_job: string
+    -original_text: text
+    -current_skills: json
+    -missing_skills: json
+    +user(): BelongsTo
+  }
+
+  class UserRoadmap <<Entity>> {
+    -roadmap_text: text
+    -suggested_courses: json
+    -completed_skills: json
+    -is_active: bool
+    +user(): BelongsTo
+  }
+
+  class UserQuiz <<Entity>> {
+    -tested_skills: json
+    -quiz_data: json
+    -score: int
+    +user(): BelongsTo
+  }
+
+  class Job <<Entity>> {
+    -title: string
+    -requirements: text
+    -is_paid: bool
+    +user(): BelongsTo
+  }
+
+  class Shortlist <<Entity>> {
+    -company_user_id: bigint
+    -candidate_email: string
+    -match_score: string
+    +company(): BelongsTo
+  }
+
+  class Complaint <<Entity>> {
+    -subject: string
+    -status: string
+    +user(): BelongsTo
+  }
+}
+
+' ═══════════════════════════════════════════════════════════
+' LAYER 4 — AI & INFRASTRUCTURE
+' ═══════════════════════════════════════════════════════════
+
+package "AI & Infrastructure Layer" as IL #FDF4FF {
+
+  class AiCareerService <<AI Service>> {
+    -geminiApiKey: string
+    -geminiUrl: string
+    --
+    #callGemini(prompt, system): string
+    +readCv(pdfPath): string
+    +analyzeGap(cvText, job): array
+    +generateRoadmapAndCourses(skills, job): array
+    +generateQuiz(skills): array
+    +generateAtsCv(data, skills, info): string
+    -scrapeRealCoursesForSkill(skill): array
+  }
+
+  interface "IGeminiClient" as IGemini {
+    +generateContent(prompt): string
+  }
+
+  class PdfParser <<Library>> {
+    +parseFile(path): Pdf
+    +getText(): string
+  }
+
+  class DomPdfWrapper <<Library>> {
+    +loadHTML(html): self
+    +stream(filename): Response
+  }
+}
+
+package "External Systems" as EXT #FEF2F2 {
+
+  class "Google Gemini API\n(gemini-flash-latest)" as Gemini <<External>>
+  class "Firebase Auth" as Firebase <<External>>
+  class "Google Sign-In" as GoogleSignIn <<External>>
+  class "MySQL Database" as MySQL <<External>>
+}
+
+' ═══════════════════════════════════════════════════════════
+' RELATIONSHIPS — Presentation
+' ═══════════════════════════════════════════════════════════
+
+MyApp --> UiScreens : navigates
+UiScreens --> AiApiService : uses
+UiScreens --> LocalStorageService : caches
+UiScreens --> CustomButton
+UiScreens --> LoadingOverlay
+MyApp --> AppTheme : applies
+MyApp ..> Firebase : optional auth
+MyApp ..> GoogleSignIn
+
+' ═══════════════════════════════════════════════════════════
+' RELATIONSHIPS — Application → Domain → AI
+' ═══════════════════════════════════════════════════════════
+
+AuthController -|> Controller
+AiController -|> Controller
+JobController -|> Controller
+ComplaintController -|> Controller
+
+AuthController --> User : manages
+AuthController --> JobSeeker
+AuthController --> Company
+
+AiController --> AiCareerService : orchestrates
+AiController --> UserResume : persists
+AiController --> UserRoadmap : persists
+AiController --> UserQuiz : persists
+
+JobController --> Job
+JobController --> Shortlist
+
+ComplaintController --> Complaint
+
+AiCareerService ..|> IGemini
+AiCareerService --> Gemini : HTTPS REST
+AiCareerService --> PdfParser : extract CV text
+AiController --> DomPdfWrapper : ATS PDF export
+
+' ═══════════════════════════════════════════════════════════
+' DOMAIN ASSOCIATIONS
+' ═══════════════════════════════════════════════════════════
+
+User "1" *-- "0..1" JobSeeker
+User "1" *-- "0..1" Company
+User "1" o-- "0..1" UserResume
+User "1" *-- "0..*" UserRoadmap
+User "1" *-- "0..*" UserQuiz
+User "1" *-- "0..*" Job
+User "1" *-- "0..*" Complaint
+User "1" *-- "0..*" Shortlist : company
+
+' ═══════════════════════════════════════════════════════════
+' CLIENT ↔ SERVER (REST)
+' ═══════════════════════════════════════════════════════════
+
+AiApiService ..> AuthController : <<HTTP>>\n/api/auth/*
+AiApiService ..> AiController : <<HTTP>>\n/api/ai/*
+AiApiService ..> JobController : <<HTTP>>\n/api/jobs
+
+AuthController ..> MySQL
+AiController ..> MySQL
+JobController ..> MySQL
+
+' ═══════════════════════════════════════════════════════════
+' AI PIPELINE NOTE
+' ═══════════════════════════════════════════════════════════
+
+note as NPipeline
+  <b>AI Career Pipeline</b>
+  ─────────────────────
+  1. <b>analyzeGap</b> → UserResume
+  2. <b>generateRoadmap</b> → UserRoadmap
+  3. <b>generateQuiz</b> → UserQuiz
+  4. <b>submitQuiz</b> (≥70%) → completed_skills
+  5. <b>generateAtsCv</b> → PDF stream
+end note
+
+AiCareerService .. NPipeline
+NPipeline .. UserResume
+NPipeline .. UserRoadmap
+NPipeline .. UserQuiz
+
+note right of AiCareerService
+  <b>Prompt Engineering</b>
+  • Structured JSON outputs
+  • System instructions per task
+  • Temperature = 0.7
+  • Regex JSON sanitization
+end note
+
+note bottom of AiApiService
+  <b>Security</b>
+  Bearer token (Sanctum)
+  API key server-side only
+end note
+
+@enduml

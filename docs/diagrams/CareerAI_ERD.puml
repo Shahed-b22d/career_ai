@@ -1,0 +1,236 @@
+@startuml CareerAI_ERD
+' ============================================================
+' Career AI — Entity Relationship Diagram (Logical / Physical)
+' Notation: Crow's Foot (IE) | DB: MySQL 8 / MariaDB 10.4
+' ============================================================
+
+!theme cerulean-outline
+skinparam shadowing false
+skinparam linetype ortho
+skinparam roundcorner 8
+skinparam defaultFontName "Segoe UI"
+skinparam dpi 150
+
+skinparam entity {
+  BackgroundColor #F8FAFC
+  BorderColor #334155
+  FontColor #0F172A
+}
+
+skinparam arrow {
+  Color #475569
+  FontSize 10
+}
+
+title <size:18><b>Career AI</b></size>\n<size:12>Logical Data Model — ERD</size>\n<size:10>Flutter Client + Laravel API + MySQL</size>
+
+legend right
+  |= Symbol |= Meaning |
+  | <b>PK</b> | Primary Key |
+  | <b>FK</b> | Foreign Key |
+  | <b>UK</b> | Unique Constraint |
+  | JSON | JSON column |
+  |= Cardinality |
+  | 1 — exactly one |
+  | 0..1 — zero or one |
+  | 1..* — one or many |
+  | * — zero or many |
+endlegend
+
+' ─────────────────────────────────────────────────────────────
+' CORE IDENTITY
+' ─────────────────────────────────────────────────────────────
+
+entity "users" as users << (T,#DBEAFE) core >> {
+  * **id** : BIGINT <<PK>>
+  --
+  name : VARCHAR(255)
+  email : VARCHAR(255) <<UK>>
+  email_verified_at : TIMESTAMP NULL
+  password : VARCHAR(255)
+  role : ENUM(job, company)
+  phone : VARCHAR(255) NULL
+  business_type : VARCHAR(255) NULL
+  governorate : VARCHAR(255) NULL
+  avatar_path : VARCHAR(255) NULL
+  remember_token : VARCHAR(100) NULL
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "job_seekers" as job_seekers << (T,#E0F2FE) profile >> {
+  * **id** : BIGINT <<PK>>
+  --
+  *user_id : BIGINT <<FK,UK>>
+  phone : VARCHAR(255) NULL
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "companies" as companies << (T,#E0F2FE) profile >> {
+  * **id** : BIGINT <<PK>>
+  --
+  *user_id : BIGINT <<FK,UK>>
+  phone : VARCHAR(255) NULL
+  business_type : VARCHAR(255) NULL
+  commercial_register_path : VARCHAR(255) NULL
+  description : TEXT NULL
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+' ─────────────────────────────────────────────────────────────
+' AI & CAREER PIPELINE
+' ─────────────────────────────────────────────────────────────
+
+entity "user_resumes" as user_resumes << (T,#FEF3C7) ai >> {
+  * **id** : BIGINT <<PK>>
+  --
+  user_id : BIGINT <<FK>> NULL
+  target_job : VARCHAR(255) NULL
+  original_text : LONGTEXT NULL
+  current_skills : JSON NULL
+  missing_skills : JSON NULL
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+  ..
+  <i>Source: PDF parse or manual input</i>
+  <i>Output: Gemini gap analysis</i>
+}
+
+entity "user_roadmaps" as user_roadmaps << (T,#FEF3C7) ai >> {
+  * **id** : BIGINT <<PK>>
+  --
+  user_id : BIGINT <<FK>> NULL
+  target_job : VARCHAR(255) NULL
+  roadmap_text : LONGTEXT NULL
+  missing_skills : JSON NULL
+  suggested_courses : JSON NULL
+  completed_skills : JSON NULL
+  is_active : BOOLEAN DEFAULT true
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+  ..
+  <i>One active roadmap per user</i>
+}
+
+entity "user_quizzes" as user_quizzes << (T,#FEF3C7) ai >> {
+  * **id** : BIGINT <<PK>>
+  --
+  user_id : BIGINT <<FK>> NULL
+  tested_skills : JSON NULL
+  quiz_data : JSON NULL
+  score : INT NULL
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+  ..
+  <i>Pass threshold: 70%</i>
+  <i>Updates completed_skills</i>
+}
+
+' ─────────────────────────────────────────────────────────────
+' JOBS & COMPANY OPS
+' ─────────────────────────────────────────────────────────────
+
+entity "jobs" as jobs << (T,#DCFCE7) business >> {
+  * **id** : BIGINT <<PK>>
+  --
+  *user_id : BIGINT <<FK>>
+  title : VARCHAR(255)
+  job_type : VARCHAR(255)
+  location : VARCHAR(255)
+  salary : VARCHAR(255)
+  description : TEXT
+  requirements : TEXT
+  is_paid : BOOLEAN DEFAULT false
+  payment_session_id : VARCHAR(255) NULL
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "shortlists" as shortlists << (T,#DCFCE7) business >> {
+  * **id** : BIGINT <<PK>>
+  --
+  *company_user_id : BIGINT <<FK>>
+  candidate_name : VARCHAR(255)
+  candidate_email : VARCHAR(255)
+  candidate_phone : VARCHAR(255) NULL
+  candidate_governorate : VARCHAR(255) NULL
+  candidate_role : VARCHAR(255) NULL
+  match_score : VARCHAR(255) NULL
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+  ..
+  UK (company_user_id, candidate_email)
+}
+
+entity "complaints" as complaints << (T,#FEE2E2) support >> {
+  * **id** : BIGINT <<PK>>
+  --
+  *user_id : BIGINT <<FK>>
+  role : VARCHAR(255)
+  subject : VARCHAR(255)
+  message : TEXT
+  status : VARCHAR(255) DEFAULT pending
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+' ─────────────────────────────────────────────────────────────
+' INFRASTRUCTURE (Laravel)
+' ─────────────────────────────────────────────────────────────
+
+entity "personal_access_tokens" as tokens << (T,#F1F5F9) infra >> {
+  * **id** : BIGINT <<PK>>
+  --
+  tokenable_type : VARCHAR(255)
+  tokenable_id : BIGINT
+  name : VARCHAR(255)
+  token : VARCHAR(64) <<UK>>
+  abilities : TEXT NULL
+  last_used_at : TIMESTAMP NULL
+  expires_at : TIMESTAMP NULL
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+' ─────────────────────────────────────────────────────────────
+' RELATIONSHIPS
+' ─────────────────────────────────────────────────────────────
+
+users ||--o| job_seekers : "has profile\n(role = job)"
+users ||--o| companies : "has profile\n(role = company)"
+users ||--o{ jobs : "posts"
+users ||--o| user_resumes : "owns"
+users ||--o{ user_roadmaps : "follows"
+users ||--o{ user_quizzes : "attempts"
+users ||--o{ complaints : "submits"
+users ||--o{ shortlists : "company_user_id"
+users ||--o{ tokens : "Sanctum\nmorph"
+
+note right of user_resumes
+  <b>AI Pipeline Step 1</b>
+  POST /api/ai/cv/gap-analysis
+  Gemini → current_skills,
+  missing_skills
+end note
+
+note right of user_roadmaps
+  <b>AI Pipeline Step 2</b>
+  POST /api/ai/career/roadmap
+  Gemini → roadmap + courses
+end note
+
+note right of user_quizzes
+  <b>AI Pipeline Step 3</b>
+  POST /api/ai/career/quiz
+  POST /api/ai/career/quiz/submit
+end note
+
+note bottom of users
+  <b>Role discrimination</b>
+  job → job_seekers extension
+  company → companies extension
+end note
+
+@enduml

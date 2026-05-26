@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../services/ai_api_service.dart';
+import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_input_field.dart';
@@ -60,6 +61,12 @@ class _AuthAndRoleSelectionWidgetState
       if (mounted) Navigator.pop(context); // close loading
 
       // login() throws on error, if we reach here it succeeded
+      // Send FCM token to backend
+      final fcmToken = await NotificationService().getToken();
+      if (fcmToken != null) {
+        AiApiService.updateFcmToken(fcmToken);
+      }
+
       final userRole = result['user']?['role'] ?? selectedRole;
       if (userRole == 'company') {
         Navigator.pushReplacementNamed(context, '/companyDashboard');

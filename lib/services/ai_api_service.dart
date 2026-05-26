@@ -9,13 +9,20 @@ import 'local_storage_service.dart';
 
 class AiApiService {
   // 10.0.2.2 = localhost for Android Emulator
-  // Change to your machine's local IP (e.g. 192.168.x.x) for a real device
-  static const String _host    = 'http://127.0.0.1:8000';
+  // 127.0.0.1 = localhost for Physical Device with `adb reverse`
+  
+  // (استخدم هذا السطر إذا كنت تستخدم الموبايل والوصلة)
+  static const String _host    = 'http://127.0.0.1:8000'; 
+
+  // (هذا السطر مخصص لشريكتك التي تستخدم المحاكي - يمكن تبديلهما عند الحاجة)
+  // static const String _host    = 'http://10.0.2.2:8000'; 
+
   static const String baseUrl  = '$_host/api/ai';
   static const String authUrl  = '$_host/api/auth';
 
   /// دالة مساعدة لتنظيف الردود القادمة من السيرفر من أي تحذيرات (PHP Warnings)
   static dynamic _cleanAndDecode(String body) {
+
     body = body.trim();
     if (body.isEmpty) return {};
 
@@ -152,6 +159,7 @@ class AiApiService {
     required String role,
   }) async {
     try {
+      print("DEBUG: Attempting Login to $authUrl/login");
       final response = await http.post(
         Uri.parse('$authUrl/login'),
         headers: {
@@ -164,9 +172,11 @@ class AiApiService {
           'role':     role,
         }),
       );
+      print("DEBUG: Login Response Status: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final data = _cleanAndDecode(response.body) as Map<String, dynamic>;
+        print("DEBUG: Login Success. Token saved.");
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('auth_token', data['token']);
 
@@ -184,16 +194,20 @@ class AiApiService {
         }
         return data;
       } else {
+        print("DEBUG: Login Failed: ${response.body}");
         String errorMsg = response.body;
         try {
           final decoded = jsonDecode(response.body);
           if (decoded is Map && decoded.containsKey('message')) {
             errorMsg = decoded['message'];
           }
-        } catch (_) {}
+        } catch (e) {
+          print("DEBUG: Error decoding error response: $e");
+        }
         throw Exception(errorMsg);
       }
     } catch (e) {
+      print("DEBUG: Login Exception: $e");
       throw Exception(e.toString().replaceFirst('Exception: ', ''));
     }
   }
@@ -293,6 +307,20 @@ class AiApiService {
     }
   }
 
+  // 3a. Auth: Update FCM Token
+  static Future<void> updateFcmToken(String fcmToken) async {
+    try {
+      final headers = await getAuthHeaders();
+      await http.post(
+        Uri.parse('$authUrl/fcm-token'),
+        headers: headers,
+        body: jsonEncode({'fcm_token': fcmToken}),
+      );
+    } catch (e) {
+      print('updateFcmToken error: $e');
+    }
+  }
+
   // 3b. Auth: Forgot Password — يرسل رابط إعادة التعيين على الإيميل
   static Future<Map<String, dynamic>> forgotPassword({
     required String email,
@@ -353,6 +381,24 @@ class AiApiService {
     }
   }
 
+  /// شكاوى المستخدم الحالي
+  static Future<List<dynamic>> getMyComplaints() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_host/api/complaints/mine'),
+        headers: await getAuthHeaders(),
+      );
+      if (response.statusCode == 200) {
+        final data = _cleanAndDecode(response.body) as Map<String, dynamic>;
+        return data['data'] as List<dynamic>? ?? [];
+      }
+      return [];
+    } catch (e) {
+      print('getMyComplaints error: $e');
+      return [];
+    }
+  }
+
   // 4. Submit Complaint
   static Future<Map<String, dynamic>> submitComplaint({
     required String subject,
@@ -395,6 +441,7 @@ class AiApiService {
   /// AI 1. Gap Analysis
   static Future<Map<String, dynamic>?> analyzeGap(String targetJob, String manualText, {File? cvFile}) async {
     try {
+      print("DEBUG: Starting Gap Analysis for $targetJob");
       var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/cv/gap-analysis'));
       request.headers['Accept'] = 'application/json';
       
@@ -414,15 +461,16 @@ class AiApiService {
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
+      print("DEBUG: Gap Analysis Response: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         return _cleanAndDecode(response.body);
       } else {
-        print("Error in analyzeGap: ${response.statusCode} - ${response.body}");
+        print("DEBUG: Gap Analysis Error Body: ${response.body}");
         return null;
       }
     } catch (e) {
-      print("Exception in analyzeGap: $e");
+      print("DEBUG: Gap Analysis Exception: $e");
       return null;
     }
   }
