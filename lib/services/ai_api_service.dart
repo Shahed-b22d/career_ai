@@ -747,4 +747,30 @@ class AiApiService {
       return null;
     }
   }
+
+  /// Get a single job seeker profile for the Candidate Profile screen
+  static Future<Map<String, dynamic>?> getCandidateProfile(int userId) async {
+    try {
+      final token = await getToken();
+      final response = await http.get(
+        Uri.parse('$_host/api/candidates/$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final res = _cleanAndDecode(response.body);
+        if (res != null && res['success'] == true) {
+          return Map<String, dynamic>.from(res['data'] as Map);
+        }
+      }
+      return null;
+    } catch (e) {
+      print("Exception in getCandidateProfile: $e");
+      return null;
+    }
+  }
 }
