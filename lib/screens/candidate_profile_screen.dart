@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/ai_api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 
@@ -11,57 +12,100 @@ class CandidateProfileScreen extends StatefulWidget {
 }
 
 class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
-  bool isShortlisted = false;
+  Map<String, dynamic>? _profile;
+  bool _isLoading = true;
+  bool _isFetchingInfo = false;
+  String? _errorMessage;
 
   @override
-  Widget build(BuildContext context) {
-    final args =
-        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final name = args?['name'] ?? 'Candidate Name';
-    final role = args?['role'] ?? 'Role title';
-    final matchScore = args?['match'] ?? '90%';
-    final email = args?['email'] ?? 'No email provided';
-    final phone = args?['phone'] ?? 'No phone provided';
-    final governorate = args?['governorate'] ?? 'Not specified';
-    final List<dynamic> skills = args?['skills'] ?? [];
-    final List<dynamic> missingSkills = args?['missing_skills'] ?? [];
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        title: const Text(
-          "Candidate Profile",
-          style: TextStyle(
-            color: Colors.black87,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black87),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildProfileHeader(name, role, matchScore),
-            const SizedBox(height: 32),
-            _buildMatchDetails(skills, missingSkills),
-            const SizedBox(height: 40),
-            CustomButton(
-              text: "Shortlist Candidate",
-              onPressed: () {
-                _showContactInfoSheet(context, name, email, phone, governorate);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadProfile());
   }
 
-  void _showContactInfoSheet(BuildContext context, String name, String email, String phone, String governorate) {
+  Future<void> _loadProfile() async {
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+    final userId = _parseUserId(args?['user_id']);
+    final jobId = args?['job_id'] != null ? int.tryParse(args!['job_id'].toString()) : null;
+
+    if (userId == null) {
+      setState(() {
+        _profile = args;
+        _isLoading = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final data = await AiApiService.getCandidateProfile(userId, jobId: jobId);
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+      if (data != null) {
+        _profile = data;
+        if (jobId != null) {
+          _profile!['job_id'] = jobId;
+        }
+      } else {
+        _profile = args;
+        _errorMessage = 'Could not load candidate data from the server.';
+      }
+    });
+  }
+
+  int? _parseUserId(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    return int.tryParse(value.toString());
+  }
+
+  Future<void> _showCandidateInfo() async {
+    final userId = _parseUserId(_profile?['user_id']);
+    final jobId = _profile?['job_id'] != null ? int.tryParse(_profile!['job_id'].toString()) : null;
+
+    if (userId != null) {
+      setState(() => _isFetchingInfo = true);
+      final freshData = await AiApiService.getCandidateProfile(userId, jobId: jobId);
+      if (!mounted) return;
+      setState(() => _isFetchingInfo = false);
+
+      if (freshData != null) {
+        setState(() {
+          _profile = freshData;
+          if (jobId != null) {
+            _profile!['job_id'] = jobId;
+          }
+        });
+        _openInfoSheet(freshData);
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load candidate information.')),
+      );
+      return;
+    }
+
+    if (_profile != null) {
+      _openInfoSheet(_profile!);
+    }
+  }
+
+  void _openInfoSheet(Map<String, dynamic> profile) {
+    final name = profile['name'] ?? 'Candidate Name';
+    final email = profile['email'] ?? 'No email provided';
+    final phone = profile['phone'] ?? 'No phone provided';
+    final governorate = profile['governorate'] ?? 'Not specified';
+    final role = profile['role'] ?? profile['target_job'] ?? 'Job Seeker';
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -88,11 +132,11 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
               const SizedBox(height: 20),
               Row(
                 children: [
-                  const Icon(Icons.check_circle, color: Colors.green, size: 28),
+                  const Icon(Icons.person_outline, color: AppTheme.primaryColor, size: 28),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      "$name Shortlisted!",
+                      name,
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -103,8 +147,13 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
                 ],
               ),
               const SizedBox(height: 8),
+              Text(
+                role,
+                style: const TextStyle(color: Colors.black54, fontSize: 14),
+              ),
+              const SizedBox(height: 8),
               const Text(
-                "You can now contact this candidate directly.",
+                'Contact details from the job seeker profile.',
                 style: TextStyle(color: Colors.black54),
               ),
               const SizedBox(height: 24),
@@ -117,17 +166,17 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
                 ),
                 child: Column(
                   children: [
-                    _buildInfoRow(Icons.email_outlined, "Email", email),
+                    _buildInfoRow(Icons.email_outlined, 'Email', email),
                     const Divider(height: 24),
-                    _buildInfoRow(Icons.phone_android_outlined, "Phone", phone),
+                    _buildInfoRow(Icons.phone_android_outlined, 'Phone', phone),
                     const Divider(height: 24),
-                    _buildInfoRow(Icons.location_on_outlined, "Governorate", governorate),
+                    _buildInfoRow(Icons.location_on_outlined, 'Governorate', governorate),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
               CustomButton(
-                text: "Close",
+                text: 'Close',
                 onPressed: () => Navigator.pop(context),
               ),
             ],
@@ -137,7 +186,87 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
     );
   }
 
-  Widget _buildProfileHeader(String name, String role, String matchScore) {
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
+        appBar: AppBar(
+          title: const Text(
+            'Candidate Profile',
+            style: TextStyle(
+              color: Colors.black87,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.black87),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(color: AppTheme.primaryColor),
+        ),
+      );
+    }
+
+    final name = _profile?['name'] ?? 'Candidate Name';
+    final role = _profile?['role'] ?? _profile?['target_job'] ?? 'Role title';
+    final matchScore = _profile?['match'] ?? '90%';
+    final List<dynamic> skills = _profile?['skills'] ?? [];
+    final List<dynamic> missingSkills = _profile?['missing_skills'] ?? [];
+    final matchedJobTitle = _profile?['matched_job_title']?.toString();
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
+      appBar: AppBar(
+        title: const Text(
+          'Candidate Profile',
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black87),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_errorMessage != null) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                ),
+                child: Text(
+                  _errorMessage!,
+                  style: const TextStyle(color: Colors.orange, fontSize: 13),
+                ),
+              ),
+            ],
+            _buildProfileHeader(name, role, matchScore, matchedJobTitle),
+            const SizedBox(height: 32),
+            _buildMatchDetails(skills, missingSkills),
+            const SizedBox(height: 40),
+            CustomButton(
+              text: 'View Candidate Info',
+              isLoading: _isFetchingInfo,
+              onPressed: _showCandidateInfo,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileHeader(String name, String role, String matchScore, String? matchedJobTitle) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -186,7 +315,9 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
                 const Icon(Icons.auto_awesome, color: Colors.green, size: 16),
                 const SizedBox(width: 8),
                 Text(
-                  "AI Match: $matchScore",
+                  matchedJobTitle != null
+                      ? 'AI Match: $matchScore ($matchedJobTitle)'
+                      : 'AI Match: $matchScore',
                   style: const TextStyle(
                     color: Colors.green,
                     fontWeight: FontWeight.bold,
@@ -207,7 +338,7 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
         Icon(icon, color: AppTheme.primaryColor, size: 20),
         const SizedBox(width: 12),
         Text(
-          "$label: ",
+          '$label: ',
           style: const TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 14,
@@ -244,7 +375,7 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "AI Gap Analysis (Skills & Gaps)",
+          'AI Gap Analysis (Skills & Gaps)',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -254,7 +385,7 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
         const SizedBox(height: 16),
         if (matchedWidgets.isEmpty && missingWidgets.isEmpty)
           const Text(
-            "No skills data was extracted from the resume.",
+            'No skills data was extracted from the resume.',
             style: TextStyle(
               color: Colors.black54,
               fontStyle: FontStyle.italic,
@@ -265,7 +396,7 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
             const Padding(
               padding: EdgeInsets.only(bottom: 8.0, left: 4.0),
               child: Text(
-                "Candidate Strengths / Current Skills",
+                'Candidate Strengths / Current Skills',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.green,
@@ -280,7 +411,7 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
             const Padding(
               padding: EdgeInsets.only(bottom: 8.0, left: 4.0),
               child: Text(
-                "Missing Skills / Gap Areas",
+                'Missing Skills / Gap Areas',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.red,
@@ -325,7 +456,7 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
             ),
           ),
           Text(
-            isMatched ? "Possessed" : "Missing",
+            isMatched ? 'Possessed' : 'Missing',
             style: TextStyle(
               fontSize: 13,
               color: isMatched ? Colors.green : Colors.red,

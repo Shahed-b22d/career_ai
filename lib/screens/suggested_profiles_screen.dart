@@ -183,6 +183,7 @@ class _SuggestedProfilesScreenState extends State<SuggestedProfilesScreen> {
     final role       = candidate['role']  ?? 'Developer';
     final matchScore = candidate['match'] ?? '85%';
     final matchInt   = int.tryParse(matchScore.replaceAll('%', '')) ?? 0;
+    final matchedJobTitle = candidate['matched_job_title']?.toString();
 
     Color matchColor;
     if (matchInt >= 90) {
@@ -195,10 +196,14 @@ class _SuggestedProfilesScreenState extends State<SuggestedProfilesScreen> {
 
     return GestureDetector(
       onTap: () {
+        final Map<String, dynamic> candidateData = Map<String, dynamic>.from(candidate);
+        if (candidateData['matched_job_id'] != null) {
+          candidateData['job_id'] = candidateData['matched_job_id'];
+        }
         Navigator.pushNamed(
           context,
           '/candidateProfile',
-          arguments: Map<String, dynamic>.from(candidate),
+          arguments: candidateData,
         );
       },
       child: Container(
@@ -248,7 +253,7 @@ class _SuggestedProfilesScreenState extends State<SuggestedProfilesScreen> {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    role,
+                    matchedJobTitle != null ? 'For: $matchedJobTitle' : role,
                     style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
                   ),
                 ],
