@@ -28,6 +28,8 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
     final userId = _parseUserId(args?['user_id']);
+    final jobId = args?['job_id'] != null ? int.tryParse(args!['job_id'].toString()) : null;
+
     if (userId == null) {
       setState(() {
         _profile = args;
@@ -41,7 +43,7 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
       _errorMessage = null;
     });
 
-    final data = await AiApiService.getCandidateProfile(userId);
+    final data = await AiApiService.getCandidateProfile(userId, jobId: jobId);
 
     if (!mounted) return;
 
@@ -49,6 +51,9 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
       _isLoading = false;
       if (data != null) {
         _profile = data;
+        if (jobId != null) {
+          _profile!['job_id'] = jobId;
+        }
       } else {
         _profile = args;
         _errorMessage = 'Could not load candidate data from the server.';
@@ -64,15 +69,21 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
 
   Future<void> _showCandidateInfo() async {
     final userId = _parseUserId(_profile?['user_id']);
+    final jobId = _profile?['job_id'] != null ? int.tryParse(_profile!['job_id'].toString()) : null;
 
     if (userId != null) {
       setState(() => _isFetchingInfo = true);
-      final freshData = await AiApiService.getCandidateProfile(userId);
+      final freshData = await AiApiService.getCandidateProfile(userId, jobId: jobId);
       if (!mounted) return;
       setState(() => _isFetchingInfo = false);
 
       if (freshData != null) {
-        setState(() => _profile = freshData);
+        setState(() {
+          _profile = freshData;
+          if (jobId != null) {
+            _profile!['job_id'] = jobId;
+          }
+        });
         _openInfoSheet(freshData);
         return;
       }
@@ -203,6 +214,7 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
     final matchScore = _profile?['match'] ?? '90%';
     final List<dynamic> skills = _profile?['skills'] ?? [];
     final List<dynamic> missingSkills = _profile?['missing_skills'] ?? [];
+    final matchedJobTitle = _profile?['matched_job_title']?.toString();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -239,7 +251,7 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
                 ),
               ),
             ],
-            _buildProfileHeader(name, role, matchScore),
+            _buildProfileHeader(name, role, matchScore, matchedJobTitle),
             const SizedBox(height: 32),
             _buildMatchDetails(skills, missingSkills),
             const SizedBox(height: 40),
@@ -254,7 +266,7 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
     );
   }
 
-  Widget _buildProfileHeader(String name, String role, String matchScore) {
+  Widget _buildProfileHeader(String name, String role, String matchScore, String? matchedJobTitle) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -303,7 +315,9 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
                 const Icon(Icons.auto_awesome, color: Colors.green, size: 16),
                 const SizedBox(width: 8),
                 Text(
-                  'AI Match: $matchScore',
+                  matchedJobTitle != null
+                      ? 'AI Match: $matchScore ($matchedJobTitle)'
+                      : 'AI Match: $matchScore',
                   style: const TextStyle(
                     color: Colors.green,
                     fontWeight: FontWeight.bold,
