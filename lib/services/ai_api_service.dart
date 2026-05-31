@@ -749,11 +749,14 @@ class AiApiService {
   }
 
   /// Get a single job seeker profile for the Candidate Profile screen
-  static Future<Map<String, dynamic>?> getCandidateProfile(int userId) async {
+  static Future<Map<String, dynamic>?> getCandidateProfile(int userId, {int? jobId}) async {
     try {
       final token = await getToken();
+      final uri = jobId != null
+          ? Uri.parse('$_host/api/candidates/$userId?job_id=$jobId')
+          : Uri.parse('$_host/api/candidates/$userId');
       final response = await http.get(
-        Uri.parse('$_host/api/candidates/$userId'),
+        uri,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -770,6 +773,33 @@ class AiApiService {
       return null;
     } catch (e) {
       print("Exception in getCandidateProfile: $e");
+      return null;
+    }
+  }
+
+  /// Get all AI-matched candidates for a specific job posting
+  /// Returns candidates sorted by match_score descending (from job_candidate_scores table)
+  static Future<Map<String, dynamic>?> getJobCandidates(int jobId) async {
+    try {
+      final token = await getToken();
+      final response = await http.get(
+        Uri.parse('$_host/api/jobs/$jobId/candidates'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final res = _cleanAndDecode(response.body);
+        if (res != null && res['success'] == true) {
+          return Map<String, dynamic>.from(res as Map);
+        }
+      }
+      return null;
+    } catch (e) {
+      print("Exception in getJobCandidates: $e");
       return null;
     }
   }

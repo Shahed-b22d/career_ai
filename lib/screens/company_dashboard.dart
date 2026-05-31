@@ -112,10 +112,15 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
                               padding: const EdgeInsets.only(bottom: 12),
                               child: _buildRecentJobRow(
                                 context,
-                                job['title'] ?? 'Job Posting',
-                                dateStr,
-                                job['matches_count'] ?? '0 Matches',
-                                job['is_paid'] ?? false,
+                                jobId: job['id'],
+                                title: job['title'] ?? 'Job Posting',
+                                subtitle: dateStr,
+                                badge: job['matches_count'] ?? '0 Matches',
+                                isPaid: job['is_paid'] ?? false,
+                                description: job['description'] ?? '',
+                                location: job['location'] ?? '',
+                                salary: job['salary'] ?? '',
+                                jobType: job['job_type'] ?? '',
                               ),
                             );
                           },
@@ -347,13 +352,18 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
     final name = candidate['name'] ?? 'Candidate';
     final role = candidate['role'] ?? 'Job Seeker';
     final match = candidate['match'] ?? '85%';
+    final matchedJobTitle = candidate['matched_job_title']?.toString();
 
     return GestureDetector(
       onTap: () {
+        final Map<String, dynamic> candidateData = Map<String, dynamic>.from(candidate);
+        if (candidateData['matched_job_id'] != null) {
+          candidateData['job_id'] = candidateData['matched_job_id'];
+        }
         Navigator.pushNamed(
           context,
           '/candidateProfile',
-          arguments: candidate,
+          arguments: candidateData,
         );
       },
       child: Container(
@@ -388,7 +398,7 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
             ),
             const SizedBox(height: 4),
             Text(
-              role,
+              matchedJobTitle != null ? 'For: $matchedJobTitle' : role,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 11, color: Colors.black54),
@@ -472,16 +482,33 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
     );
   }
 
-  Widget _buildRecentJobRow(BuildContext context, String title, String subtitle, String badge, bool isPaid) {
+  Widget _buildRecentJobRow(
+    BuildContext context, {
+    required int? jobId,
+    required String title,
+    required String subtitle,
+    required String badge,
+    required bool isPaid,
+    String description = '',
+    String location = '',
+    String salary = '',
+    String jobType = '',
+  }) {
     return GestureDetector(
       onTap: () {
         Navigator.pushNamed(
           context,
           '/jobDetails',
           arguments: {
-            'title': title,
-            'subtitle': subtitle,
-            'matches': badge,
+            'job_id':     jobId,
+            'title':      title,
+            'subtitle':   subtitle,
+            'matches':    badge,
+            'description': description,
+            'location':   location,
+            'salary':     salary,
+            'job_type':   jobType,
+            'is_paid':    isPaid,
           },
         );
       },
