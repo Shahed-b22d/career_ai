@@ -340,7 +340,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen>
 
                           /// 🔥 Dropdown أنيق
                           DropdownButtonFormField<String>(
-                            initialValue: workType,
+                            value: workType,
                             decoration: InputDecoration(
                               hintText: "Work Type",
                               prefixIcon: const Icon(Icons.work_outline, color: AppTheme.primaryColor),

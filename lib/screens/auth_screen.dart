@@ -95,12 +95,17 @@ class _AuthAndRoleSelectionWidgetState
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        clientId: '642116540552-4f8v4824t9m73v3chfs2s17bed1nnf35.apps.googleusercontent.com',
+        serverClientId: '642116540552-4f8v4824t9m73v3chfs2s17bed1nnf35.apps.googleusercontent.com',
+      );
+
       GoogleSignInAccount? googleUser;
       try {
-        googleUser = await GoogleSignIn.instance.authenticate();
+        googleUser = await googleSignIn.signIn();
       } catch (e) {
         if (mounted) {
-          Navigator.pop(context); // User cancelled or error
+          Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text("Error: ${e.toString()}"),
@@ -112,15 +117,21 @@ class _AuthAndRoleSelectionWidgetState
         return;
       }
 
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+      if (googleUser == null) {
+        if (mounted) Navigator.pop(context); // المستخدم ألغى
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
       await FirebaseAuth.instance.signInWithCredential(credential);
 
       if (mounted) {
-        Navigator.pop(context); // Close loading dialog
+        Navigator.pop(context);
         if (selectedRole == 'company') {
           Navigator.pushReplacementNamed(context, '/companyDashboard');
         } else {
@@ -129,7 +140,7 @@ class _AuthAndRoleSelectionWidgetState
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context); // Close loading dialog
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Google Sign-In failed: $e"),

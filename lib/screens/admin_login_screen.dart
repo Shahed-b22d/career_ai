@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+
+import '../services/admin_api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_input_field.dart';
-import '../services/admin_api_service.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -111,7 +112,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       const Text("Login", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
                       const SizedBox(height: 8),
                       Text(
-                        "Default: admin@career.ai / admin123",
+                        "Default: admin@career.ai / password123",
                         style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                       ),
                       const SizedBox(height: 24),

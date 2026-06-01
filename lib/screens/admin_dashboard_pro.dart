@@ -31,6 +31,12 @@ class _AdminDashboardProState extends State<AdminDashboardPro> {
   Map<String, dynamic> _complaintCounts = {};
   String _complaintFilter = 'all';
 
+  // Users Management
+  List<dynamic> _jobSeekersList = [];
+  List<dynamic> _companiesList  = [];
+  Map<String, dynamic> _userCounts = {};
+  int _usersTabIndex = 0; // 0 = job seekers, 1 = companies
+
   @override
   void initState() {
     super.initState();
@@ -100,12 +106,29 @@ class _AdminDashboardProState extends State<AdminDashboardPro> {
     }
   }
 
+  Future<void> _loadUsers() async {
+    setState(() => _loading = true);
+    final res = await AdminApiService.getUsers();
+    if (res != null && res['success'] == true) {
+      final all = res['data'] as List<dynamic>? ?? [];
+      setState(() {
+        _jobSeekersList = all.where((u) => u['role'] == 'job').toList();
+        _companiesList  = all.where((u) => u['role'] == 'company').toList();
+        _userCounts     = res['counts'] as Map<String, dynamic>? ?? {};
+        _loading        = false;
+      });
+    } else {
+      setState(() => _loading = false);
+    }
+  }
+
   Future<void> _onNavTap(int index) async {
     setState(() => _selectedIndex = index);
     if (index == 0) await _loadDashboard();
     if (index == 1) await _loadVerifications();
     if (index == 2) await _loadTalents();
     if (index == 3) await _loadComplaints();
+    if (index == 4) await _loadUsers();
   }
 
   Future<void> _logout() async {
@@ -211,10 +234,11 @@ class _AdminDashboardProState extends State<AdminDashboardPro> {
             ],
           ),
           const SizedBox(height: 40),
-          _navItem(0, "Dashboard", Icons.dashboard_rounded, kPrimary, kText),
-          _navItem(1, "Verifications", Icons.fact_check_rounded, kPrimary, kText),
-          _navItem(2, "Talent Activity", Icons.groups_rounded, kPrimary, kText),
-          _navItem(3, "Complaints", Icons.support_agent_rounded, kPrimary, kText),
+          _navItem(0, "Dashboard",      Icons.dashboard_rounded,    kPrimary, kText),
+          _navItem(1, "Verifications",  Icons.fact_check_rounded,   kPrimary, kText),
+          _navItem(2, "Talent Activity",Icons.groups_rounded,        kPrimary, kText),
+          _navItem(3, "Complaints",     Icons.support_agent_rounded, kPrimary, kText),
+          _navItem(4, "Users",          Icons.manage_accounts_rounded, kPrimary, kText),
           const Spacer(),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.redAccent),
@@ -246,6 +270,8 @@ class _AdminDashboardProState extends State<AdminDashboardPro> {
         return _buildTalentsPage(kText, kCard, kPrimary);
       case 3:
         return _buildComplaintsPage(kText, kCard, kPrimary);
+      case 4:
+        return _buildUsersPage(kText, kCard, kPrimary);
       default:
         return _buildDashboardPage(kText, kCard, kPrimary);
     }
@@ -521,6 +547,222 @@ class _AdminDashboardProState extends State<AdminDashboardPro> {
         ],
       ),
     );
+  }
+
+  Widget _buildUsersPage(Color kText, Color kCard, Color kPrimary) {
+    final currentList = _usersTabIndex == 0 ? _jobSeekersList : _companiesList;
+    final jobCount     = _userCounts['job']     ?? _jobSeekersList.length;
+    final companyCount = _userCounts['company'] ?? _companiesList.length;
+
+    return Padding(
+      padding: const EdgeInsets.all(25),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header ──────────────────────────────────────────────────
+          Row(
+            children: [
+              Text("Users Management",
+                  style: TextStyle(color: kText, fontSize: 20, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              IconButton(
+                tooltip: 'Refresh',
+                icon: Icon(Icons.refresh_rounded, color: kText.withOpacity(0.5)),
+                onPressed: _loadUsers,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── Tab Buttons ─────────────────────────────────────────────
+          Row(
+            children: [
+              _userTabBtn(0, 'Job Seekers', jobCount, kPrimary, kCard, kText),
+              const SizedBox(width: 12),
+              _userTabBtn(1, 'Companies', companyCount, kPrimary, kCard, kText),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // ── Table ────────────────────────────────────────────────────
+          Expanded(
+            child: currentList.isEmpty
+                ? Center(
+                    child: Text('No users found',
+                        style: TextStyle(color: kText.withOpacity(0.5))))
+                : Container(
+                    decoration: BoxDecoration(
+                        color: kCard, borderRadius: BorderRadius.circular(16)),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.vertical,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          headingRowColor: WidgetStateProperty.all(
+                              kPrimary.withOpacity(0.08)),
+                          columns: [
+                            DataColumn(label: Text('Name',        style: TextStyle(color: kText, fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Email',       style: TextStyle(color: kText, fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Phone',       style: TextStyle(color: kText, fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Governorate', style: TextStyle(color: kText, fontWeight: FontWeight.bold))),
+                            if (_usersTabIndex == 1)
+                              DataColumn(label: Text('Verified', style: TextStyle(color: kText, fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Complaints',  style: TextStyle(color: kText, fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Joined',      style: TextStyle(color: kText, fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Action',      style: TextStyle(color: kText, fontWeight: FontWeight.bold))),
+                          ],
+                          rows: currentList.map<DataRow>((u) {
+                            final complaints = u['complaints_count'] as int? ?? 0;
+                            final verified   = u['verified'] ?? 'N/A';
+                            return DataRow(cells: [
+                              DataCell(Text(u['name'] ?? '', style: TextStyle(color: kText))),
+                              DataCell(Text(u['email'] ?? '', style: TextStyle(color: kText))),
+                              DataCell(Text(u['phone'] ?? 'N/A', style: TextStyle(color: kText))),
+                              DataCell(Text(u['governorate'] ?? 'N/A', style: TextStyle(color: kText))),
+                              if (_usersTabIndex == 1)
+                                DataCell(_verifiedBadge(verified)),
+                              DataCell(
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: complaints > 0
+                                        ? Colors.orange.withOpacity(0.15)
+                                        : Colors.green.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '$complaints',
+                                    style: TextStyle(
+                                      color: complaints > 0 ? Colors.orange : Colors.green,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              DataCell(Text(u['created_at'] ?? '', style: TextStyle(color: kText.withOpacity(0.6), fontSize: 12))),
+                              DataCell(
+                                IconButton(
+                                  tooltip: 'Delete user',
+                                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                                  onPressed: () => _confirmDeleteUser(u, kCard, kText, kPrimary),
+                                ),
+                              ),
+                            ]);
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _userTabBtn(int index, String label, dynamic count,
+      Color kPrimary, Color kCard, Color kText) {
+    final selected = _usersTabIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _usersTabIndex = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? kPrimary : kCard,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+              color: selected ? kPrimary : kText.withOpacity(0.1)),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              index == 0 ? Icons.person_rounded : Icons.business_rounded,
+              size: 16,
+              color: selected ? Colors.white : Colors.grey,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '$label ($count)',
+              style: TextStyle(
+                color: selected ? Colors.white : Colors.grey,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _verifiedBadge(String status) {
+    Color color;
+    IconData icon;
+    switch (status) {
+      case 'approved':
+        color = Colors.green; icon = Icons.verified_rounded; break;
+      case 'rejected':
+        color = Colors.red;   icon = Icons.cancel_rounded;   break;
+      default:
+        color = Colors.orange; icon = Icons.hourglass_empty_rounded;
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: color, size: 16),
+        const SizedBox(width: 4),
+        Text(status, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
+  Future<void> _confirmDeleteUser(
+      Map<String, dynamic> user, Color kCard, Color kText, Color kPrimary) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: kCard,
+        title: Text('Delete User', style: TextStyle(color: kText)),
+        content: Text(
+          'Are you sure you want to delete "${user['name']}"?\nThis action cannot be undone and will remove all their data.',
+          style: TextStyle(color: kText.withOpacity(0.8)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final ok = await AdminApiService.deleteUser(user['id'] as int);
+    if (!mounted) return;
+
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${user['name']} deleted successfully ✅'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      await _loadUsers();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to delete user ❌'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _buildComplaintsPage(Color kText, Color kCard, Color kPrimary) {

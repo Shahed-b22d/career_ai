@@ -796,6 +796,34 @@ class AiApiService {
     }
   }
 
+  /// Shortlist a candidate — triggers real FCM notification and saves to DB
+  static Future<Map<String, dynamic>> shortlistCandidate(int userId, {int? jobId}) async {
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('$_host/api/candidates/$userId/shortlist'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          if (jobId != null) 'job_id': jobId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return _cleanAndDecode(response.body) as Map<String, dynamic>;
+      } else {
+        final err = _cleanAndDecode(response.body);
+        return {'success': false, 'message': err['message'] ?? 'Failed to shortlist'};
+      }
+    } catch (e) {
+      print("Exception in shortlistCandidate: $e");
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
   /// Get a single job seeker profile for the Candidate Profile screen
   static Future<Map<String, dynamic>?> getCandidateProfile(int userId, {int? jobId}) async {
     try {

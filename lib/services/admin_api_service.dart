@@ -159,4 +159,23 @@ class AdminApiService {
     }
     return [];
   }
+
+  static Future<Map<String, dynamic>?> getUsers({String role = 'all'}) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/users?role=$role'),
+      headers: await _headers(),
+    );
+    if (response.statusCode == 200) {
+      return _decode(response.body) as Map<String, dynamic>;
+    }
+    return null;
+  }
+
+  static Future<bool> deleteUser(int userId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/users/$userId'),
+      headers: await _headers(),
+    );
+    return response.statusCode == 200;
+  }
 }
