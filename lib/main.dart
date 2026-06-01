@@ -22,7 +22,7 @@ import 'screens/user_dashboard.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+
 import 'screens/admin_dashboard_pro.dart';
 import 'screens/admin_login_screen.dart';
 import 'package:flutter/foundation.dart';
@@ -38,11 +38,7 @@ void main() async {
     // Register background FCM handler
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-    // إعداد Google Sign-In
-    await GoogleSignIn.instance.initialize(
-      clientId: '642116540552-4f8v4824t9m73v3chfs2s17bed1nnf35.apps.googleusercontent.com',
-      serverClientId: '642116540552-4f8v4824t9m73v3chfs2s17bed1nnf35.apps.googleusercontent.com',
-    );
+    // إعداد Google Sign-In — لا يحتاج initialize في الإصدار 6.2.x
   } catch (e) {
     debugPrint("Firebase init failed: $e");
   }

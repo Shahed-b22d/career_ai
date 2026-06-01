@@ -2,8 +2,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
+
 
 import '../services/ai_api_service.dart';
 import '../theme/app_theme.dart';
