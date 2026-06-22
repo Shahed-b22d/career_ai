@@ -13,8 +13,9 @@ class AdminLoginScreen extends StatefulWidget {
 }
 
 class _AdminLoginScreenState extends State<AdminLoginScreen> {
-  final userController = TextEditingController(text: 'admin@career.ai');
+  final userController = TextEditingController(text: 'admin@gmail.com');
   final passController = TextEditingController();
+
   bool _obscureText = true;
   bool _isLoading = false;
 
@@ -31,11 +32,15 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         email: userController.text.trim(),
         password: passController.text,
       );
+
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/admin');
     } catch (e) {
       if (!mounted) return;
-      _showSnackBar(e.toString().replaceFirst('Exception: ', ''), Colors.red);
+      _showSnackBar(
+        e.toString().replaceFirst('Exception: ', ''),
+        Colors.red,
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -48,12 +53,22 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
           children: [
             const Icon(Icons.error_outline, color: Colors.white, size: 20),
             const SizedBox(width: 12),
-            Expanded(child: Text(message, style: const TextStyle(color: Colors.white, fontSize: 13))),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                ),
+              ),
+            ),
           ],
         ),
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
         margin: const EdgeInsets.all(20),
       ),
     );
@@ -84,50 +99,89 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.auto_awesome, size: 45, color: Colors.white),
+                  child: const Icon(
+                    Icons.auto_awesome,
+                    size: 45,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 const Text(
                   "Career AI",
-                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Color(0xFF1E293B), letterSpacing: 1.0),
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF1E293B),
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const Text(
                   "ADMIN PANEL",
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blueGrey, letterSpacing: 1.5),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueGrey,
+                    letterSpacing: 1.5,
+                  ),
                 ),
                 const SizedBox(height: 32),
+
                 Container(
                   padding: const EdgeInsets.all(28),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 4)),
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 20,
+                        offset: const Offset(0, 4),
+                      ),
                     ],
-                    border: Border.all(color: Colors.black.withOpacity(0.05)),
+                    border: Border.all(
+                      color: Colors.black.withOpacity(0.05),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text("Login", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Default: admin@career.ai / password123",
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                      const Text(
+                        "Login",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
                       ),
                       const SizedBox(height: 24),
-                      CustomInputField(hint: "Email", icon: Icons.email_outlined, controller: userController),
+
+                      CustomInputField(
+                        hint: "Email",
+                        icon: Icons.email_outlined,
+                        controller: userController,
+                      ),
                       const SizedBox(height: 16),
+
                       CustomInputField(
                         hint: "Password",
                         icon: Icons.lock_outline,
                         controller: passController,
                         isPassword: true,
                         obscureText: _obscureText,
-                        onToggleObscure: () => setState(() => _obscureText = !_obscureText),
+                        onToggleObscure: () {
+                          setState(() {
+                            _obscureText = !_obscureText;
+                          });
+                        },
                       ),
+
                       const SizedBox(height: 32),
-                      CustomButton(text: "Login to Dashboard", isLoading: _isLoading, onPressed: _login),
+
+                      CustomButton(
+                        text: "Login to Dashboard",
+                        isLoading: _isLoading,
+                        onPressed: _login,
+                      ),
                     ],
                   ),
                 ),
