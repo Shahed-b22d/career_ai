@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
-import '../services/local_storage_service.dart';
+
 import '../services/ai_api_service.dart';
+import '../services/local_storage_service.dart';
+import '../theme/app_theme.dart';
 import 'complaint_screen.dart';
 
 class CompanyDashboard extends StatefulWidget {
@@ -45,7 +46,10 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
         setState(() {
           companyName = payload['company_name'] ?? companyName;
           activeJobsCount = (payload['active_jobs_count'] ?? 0).toString();
-          stripeSpend = payload['stripe_spend'] ?? "\$0";
+          
+          final spend = payload['stripe_spend']?.toString() ?? "0";
+          stripeSpend = spend.contains('\$') ? spend : "\$$spend";
+
           suggestedCandidatesCount = (payload['suggested_candidates_count'] ?? 84).toString();
           topCandidates = payload['top_candidates'] ?? [];
           recentJobs = payload['recent_jobs'] ?? [];
@@ -112,14 +116,14 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
                               padding: const EdgeInsets.only(bottom: 12),
                               child: _buildRecentJobRow(
                                 context,
-                                jobId: job['id'],
+                                jobId: job['id'] is int ? job['id'] : int.tryParse(job['id']?.toString() ?? ''),
                                 title: job['title'] ?? 'Job Posting',
                                 subtitle: dateStr,
-                                badge: job['matches_count'] ?? '0 Matches',
-                                isPaid: job['is_paid'] ?? false,
+                                badge: job['matches_count']?.toString() ?? '0 Matches',
+                                isPaid: job['is_paid'] == true || job['is_paid'] == 1 || job['is_paid'] == "1",
                                 description: job['description'] ?? '',
                                 location: job['location'] ?? '',
-                                salary: job['salary'] ?? '',
+                                salary: job['salary']?.toString() ?? '',
                                 jobType: job['job_type'] ?? '',
                               ),
                             );
@@ -230,12 +234,18 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
               child: CircleAvatar(
                 radius: 20,
                 backgroundColor: const Color(0xFFE3F2FD),
-                backgroundImage: avatarUrl != null
-                    ? NetworkImage("http://127.0.0.1:8000/storage/$avatarUrl")
-                    : null,
-                child: avatarUrl == null
-                    ? const Icon(Icons.business_rounded, color: AppTheme.primaryColor, size: 20)
-                    : null,
+                child: ClipOval(
+                  child: avatarUrl != null
+                      ? Image.network(
+                          "http://10.0.2.2:8000/storage/$avatarUrl",
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => 
+                              const Icon(Icons.business_rounded, color: AppTheme.primaryColor, size: 20),
+                        )
+                      : const Icon(Icons.business_rounded, color: AppTheme.primaryColor, size: 20),
+                ),
               ),
             ),
           ],
@@ -351,7 +361,7 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
   Widget _buildCandidateCard(BuildContext context, Map<String, dynamic> candidate) {
     final name = candidate['name'] ?? 'Candidate';
     final role = candidate['role'] ?? 'Job Seeker';
-    final match = candidate['match'] ?? '85%';
+    final match = candidate['match']?.toString() ?? '85%';
     final matchedJobTitle = candidate['matched_job_title']?.toString();
 
     return GestureDetector(

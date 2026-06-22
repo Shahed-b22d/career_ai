@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../services/admin_api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_input_field.dart';
@@ -11,7 +13,7 @@ class AdminLoginScreen extends StatefulWidget {
 }
 
 class _AdminLoginScreenState extends State<AdminLoginScreen> {
-  final userController = TextEditingController();
+  final userController = TextEditingController(text: 'admin@career.ai');
   final passController = TextEditingController();
   bool _obscureText = true;
   bool _isLoading = false;
@@ -22,21 +24,20 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (!mounted) return;
-
-    if (userController.text == "admin" && RegExp(r'^[1-9]+$').hasMatch(passController.text)) {
+    try {
+      await AdminApiService.login(
+        email: userController.text.trim(),
+        password: passController.text,
+      );
+      if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/admin');
-    } else {
-      _showSnackBar("Invalid Admin Credentials", Colors.red);
-      setState(() {
-        _isLoading = false;
-      });
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar(e.toString().replaceFirst('Exception: ', ''), Colors.red);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -61,17 +62,15 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC), // خلفية أفتح وأهدأ للويب
-      body: Center( // لضمان التوسط التام في الشاشة
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Center(
         child: SingleChildScrollView(
           child: Container(
-            width: 380, // تم تصغير العرض ليكون أكثر تناسقاً (Compact)
+            width: 380,
             padding: const EdgeInsets.symmetric(vertical: 40),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Gemini Stars Icon - Slightly smaller
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -85,87 +84,50 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.auto_awesome, 
-                    size: 45, // تصغير الأيقونة قليلاً
-                    color: Colors.white,
-                  ),
+                  child: const Icon(Icons.auto_awesome, size: 45, color: Colors.white),
                 ),
                 const SizedBox(height: 12),
                 const Text(
                   "Career AI",
-                  style: TextStyle(
-                    fontSize: 26, // تصغير الخط قليلاً ليكون أنيقاً
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF1E293B),
-                    letterSpacing: 1.0,
-                  ),
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Color(0xFF1E293B), letterSpacing: 1.0),
                 ),
                 const Text(
                   "ADMIN PANEL",
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blueGrey,
-                    letterSpacing: 1.5,
-                  ),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blueGrey, letterSpacing: 1.5),
                 ),
                 const SizedBox(height: 32),
-                
-                // Login Card
                 Container(
-                  padding: const EdgeInsets.all(28), // تقليل البادينغ الداخلي
+                  padding: const EdgeInsets.all(28),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 20,
-                        offset: const Offset(0, 4),
-                      ),
+                      BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 4)),
                     ],
-                    border: Border.all(color: Colors.black.withOpacity(0.05)), // حدود خفيفة جداً
+                    border: Border.all(color: Colors.black.withOpacity(0.05)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        "Login",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+                      const Text("Login", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Default: admin@career.ai / password123",
+                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                       ),
                       const SizedBox(height: 24),
-                      
-                      CustomInputField(
-                        hint: "Username",
-                        icon: Icons.person_outline,
-                        controller: userController,
-                      ),
+                      CustomInputField(hint: "Email", icon: Icons.email_outlined, controller: userController),
                       const SizedBox(height: 16),
-                      
                       CustomInputField(
                         hint: "Password",
                         icon: Icons.lock_outline,
                         controller: passController,
                         isPassword: true,
                         obscureText: _obscureText,
-                        onToggleObscure: () {
-                          setState(() {
-                            _obscureText = !_obscureText;
-                          });
-                        },
+                        onToggleObscure: () => setState(() => _obscureText = !_obscureText),
                       ),
                       const SizedBox(height: 32),
-                      
-                      CustomButton(
-                        text: "Login to Dashboard",
-                        isLoading: _isLoading,
-                        onPressed: _login,
-                      ),
+                      CustomButton(text: "Login to Dashboard", isLoading: _isLoading, onPressed: _login),
                     ],
                   ),
                 ),

@@ -23,7 +23,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final phoneController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
-  final businessTypeController = TextEditingController();
   final otherBusinessTypeController = TextEditingController();
 
   bool passwordVisible = false;
@@ -75,33 +74,75 @@ class _SignUpScreenState extends State<SignUpScreen> {
     phoneController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
-    businessTypeController.dispose();
     otherBusinessTypeController.dispose();
     super.dispose();
   }
 
   Future<void> signInWithGoogle() async {
     try {
+      if (selectedGovernorate == null) {
+        showError("Please select a governorate first before Google Sign-In");
+        return;
+      }
+
+      // تحقق من بيانات الشركة قبل البدء بجوجل
+      if (selectedRole == "company") {
+        if (selectedBusinessType == null || (selectedBusinessType == "Other" && otherBusinessTypeController.text.isEmpty) || commercialRegisterFile == null) {
+          showError("Please complete company details (Business Type & File) before Google Sign-In");
+          return;
+        }
+      }
+
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      final FirebaseAuth auth = FirebaseAuth.instance;
+
       GoogleSignInAccount? googleUser;
       try {
-        googleUser = await GoogleSignIn.instance.authenticate();
+        googleUser = await googleSignIn.signIn();
       } catch (e) {
         if (mounted) Navigator.pop(context);
         return;
       }
 
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+      if (googleUser == null) {
+        if (mounted) Navigator.pop(context);
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      final userCredential = await auth.signInWithCredential(credential);
+
+      final user = userCredential.user;
+      if (user == null || user.email == null) {
+        throw Exception("Failed to retrieve user information from Google.");
+      }
+
+      // إصلاح: ربط حساب جوجل بقاعدة بيانات الباك إند
+      await AiApiService.register(
+        name: user.displayName ?? "Google User",
+        email: user.email!,
+        password: "social_login_password_placeholder", // كلمة مرور وهمية للباك إند
+        role: selectedRole,
+        governorate: selectedGovernorate!,
+        phone: userCredential.user?.phoneNumber ?? "0000000000",
+        businessType: selectedRole == 'company'
+            ? (selectedBusinessType == "Other"
+                ? otherBusinessTypeController.text.trim()
+                : selectedBusinessType)
+            : null,
+        commercialRegisterFile: selectedRole == 'company' ? commercialRegisterFile : null,
+      );
 
       if (mounted) {
         Navigator.pop(context);
@@ -113,6 +154,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       }
     } catch (e) {
       if (mounted) {
+        // تسجيل الخروج من Firebase إذا فشل التسجيل في الباك إند لضمان التناسق
+        await FirebaseAuth.instance.signOut();
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -217,6 +260,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
       showError("Accept terms first");
       return false;
     }
+    if (selectedRole == "company") {
+      if (selectedBusinessType == null) {
+        showError("Please select business type");
+        return false;
+      }
+      if (selectedBusinessType == "Other" && otherBusinessTypeController.text.trim().isEmpty) {
+        showError("Please specify your business type");
+        return false;
+      }
+    }
     if (selectedRole == "company" && commercialRegisterFile == null) {
       showError("Upload commercial register");
       return false;
@@ -306,7 +359,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 16),
 
               DropdownButtonFormField<String>(
-                initialValue: selectedGovernorate,
+                value: selectedGovernorate,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.location_on_outlined),
                   hintText: "Select Governorate / اختر المحافظة",
@@ -331,7 +384,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 const SizedBox(height: 16),
 
                 DropdownButtonFormField<String>(
-                  initialValue: selectedBusinessType,
+                  value: selectedBusinessType,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.work_outline_rounded),
                     hintText: "Select Business Type",
@@ -479,12 +532,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                     if (mounted) Navigator.pop(context);
 
-                    // register() throws on error, so if we reach here it succeeded
-                    final role = result['user']?['role'] ?? selectedRole;
-                    Navigator.pushReplacementNamed(
-                      context,
-                      role == "job" ? '/userDashboard' : '/companyDashboard',
-                    );
+                    if (mounted) {
+                      // register() throws on error, so if we reach here it succeeded
+                      final role = result['user']?['role'] ?? selectedRole;
+                      Navigator.pushReplacementNamed(
+                        context,
+                        role == "job" ? '/userDashboard' : '/companyDashboard',
+                      );
+                    }
                   } catch (e) {
                     if (mounted) Navigator.pop(context);
                     showError(e.toString());

@@ -15,6 +15,8 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
   Map<String, dynamic>? _profile;
   bool _isLoading = true;
   bool _isFetchingInfo = false;
+  bool _isShortlisting = false;
+  bool _isShortlisted = false;
   String? _errorMessage;
 
   @override
@@ -65,6 +67,39 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
     if (value == null) return null;
     if (value is int) return value;
     return int.tryParse(value.toString());
+  }
+
+  Future<void> _shortlistCandidate() async {
+    final userId = _parseUserId(_profile?['user_id']);
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cannot shortlist: missing candidate ID.')),
+      );
+      return;
+    }
+
+    setState(() => _isShortlisting = true);
+
+    final jobId = _profile?['job_id'] != null
+        ? int.tryParse(_profile!['job_id'].toString())
+        : null;
+
+    final result = await AiApiService.shortlistCandidate(userId, jobId: jobId);
+
+    if (!mounted) return;
+    setState(() {
+      _isShortlisting = false;
+      if (result['success'] == true) _isShortlisted = true;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result['success'] == true
+            ? '✅ Candidate shortlisted! They will be notified.'
+            : result['message'] ?? 'Failed to shortlist.'),
+        backgroundColor: result['success'] == true ? Colors.green : Colors.red,
+      ),
+    );
   }
 
   Future<void> _showCandidateInfo() async {
@@ -259,6 +294,40 @@ class _CandidateProfileScreenState extends State<CandidateProfileScreen> {
               text: 'View Candidate Info',
               isLoading: _isFetchingInfo,
               onPressed: _showCandidateInfo,
+            ),
+            const SizedBox(height: 12),
+            // زر Shortlist
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _isShortlisted || _isShortlisting ? null : _shortlistCandidate,
+                icon: _isShortlisting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        _isShortlisted ? Icons.star_rounded : Icons.star_border_rounded,
+                        color: _isShortlisted ? Colors.amber : AppTheme.primaryColor,
+                      ),
+                label: Text(
+                  _isShortlisted ? 'Shortlisted ✓' : 'Shortlist Candidate',
+                  style: TextStyle(
+                    color: _isShortlisted ? Colors.amber : AppTheme.primaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  side: BorderSide(
+                    color: _isShortlisted ? Colors.amber : AppTheme.primaryColor,
+                  ),
+                ),
+              ),
             ),
           ],
         ),

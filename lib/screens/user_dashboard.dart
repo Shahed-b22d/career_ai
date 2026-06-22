@@ -158,7 +158,15 @@ class _UserDashboardState extends State<UserDashboard> {
             ),
           ],
         ),
-        PopupMenuButton<String>(
+        Row(
+          children: [
+            // 🔔 Notifications button
+            IconButton(
+              onPressed: () => Navigator.pushNamed(context, '/notifications'),
+              icon: const Icon(Icons.notifications_outlined, color: AppTheme.primaryColor, size: 26),
+              tooltip: 'Notifications',
+            ),
+            PopupMenuButton<String>(
           offset: const Offset(0, 50),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           itemBuilder: (context) => [
@@ -216,6 +224,8 @@ class _UserDashboardState extends State<UserDashboard> {
                 ? const Icon(Icons.person, color: Colors.blue)
                 : null,
           ),
+        )
+          ],
         )
       ],
     );

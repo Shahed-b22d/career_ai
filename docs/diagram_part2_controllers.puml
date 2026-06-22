@@ -1,0 +1,217 @@
+@startuml CareerAI_Part2_Controllers
+skinparam classAttributeIconSize 0
+skinparam classFontSize 12
+skinparam classHeaderBackgroundColor #1E3A5F
+skinparam classHeaderFontColor #FFFFFF
+skinparam classBorderColor #2C5F8A
+skinparam classBackgroundColor #F0F8FF
+skinparam arrowColor #2C5F8A
+skinparam arrowFontSize 10
+skinparam packageBackgroundColor #E8F4F8
+skinparam packageBorderColor #2C5F8A
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 40
+skinparam ranksep 55
+
+title CareerAI — Part 2 of 2: Controllers, Services & Middleware\n(See Part 1 for Data Models & Relationships)
+
+' ─────────────────────────────────────────────────────────────
+' BASE
+' ─────────────────────────────────────────────────────────────
+package "App\\Http\\Controllers" {
+
+  abstract class Controller {}
+
+  class AuthController {
+    + register(request) : JsonResponse
+    + login(request) : JsonResponse
+    + logout(request) : JsonResponse
+    + me(request) : JsonResponse
+    + updateProfile(request) : JsonResponse
+    + updateFcmToken(request) : JsonResponse
+    + forgotPassword(request) : JsonResponse
+    + resetPassword(request) : JsonResponse
+    + showResetForm(request) : View
+    + handleResetForm(request) : View|Redirect
+  }
+
+  class AiController {
+    # aiService : AiCareerService
+    --
+    + __construct(aiService)
+    + analyzeGap(request) : JsonResponse
+    + generateRoadmap(request) : JsonResponse
+    + generateQuiz(request) : JsonResponse
+    + submitQuiz(request) : JsonResponse
+    + generateAtsCv(request) : PdfStream|JsonResponse
+    + getActiveRoadmap() : JsonResponse
+    + updateProgress(request) : JsonResponse
+    + getLatestCv() : JsonResponse
+  }
+
+  class JobController {
+    + postJob(request) : JsonResponse
+    + getActiveJobs() : JsonResponse
+    + paymentSuccess(request) : HtmlResponse
+    + paymentCancel(request) : HtmlResponse
+    + showMockCheckout(job_id) : View
+    + getCompanyDashboardData() : JsonResponse
+    + getSuggestedCandidates(request) : JsonResponse
+    + getCandidateProfile(request, userId) : JsonResponse
+    + getJobCandidates(request, jobId) : JsonResponse
+    + shortlistCandidate(request, userId) : JsonResponse
+  }
+
+  class AdminController {
+    + login(request) : JsonResponse
+    + logout(request) : JsonResponse
+    + dashboard() : JsonResponse
+    + pendingCompanies() : JsonResponse
+    + approveCompany(company) : JsonResponse
+    + rejectCompany(company) : JsonResponse
+    + pendingPayments() : JsonResponse
+    + confirmPayment(job) : JsonResponse
+    + complaints(request) : JsonResponse
+    + showComplaint(complaint) : JsonResponse
+    + updateComplaint(request, complaint) : JsonResponse
+    + talentActivity() : JsonResponse
+    + getUsers(request) : JsonResponse
+    + deleteUser(user) : JsonResponse
+    # buildNotifications() : array
+  }
+
+  class ComplaintController {
+    + mine(request) : JsonResponse
+    + store(request) : JsonResponse
+  }
+}
+
+' ─────────────────────────────────────────────────────────────
+' SERVICES
+' ─────────────────────────────────────────────────────────────
+package "App\\Services" {
+
+  class AiCareerService {
+    # geminiApiKey : string
+    # geminiUrl : string
+    --
+    + __construct()
+    # callGemini(prompt, systemInstruction) : string
+    + readCv(pdfFilePath) : string
+    + analyzeGap(cvText, targetJob) : array
+    # scrapeRealCoursesForSkill(skill) : array
+    + generateRoadmapAndCourses(missingSkills, targetJob) : array
+    + generateQuiz(skillsToTest) : array
+    + generateAtsCv(userDataText, allSkills, personalInfo) : string
+    + rankCandidatesForCompany(jobDescription, candidatesResumes) : array
+  }
+
+  class FcmService {
+    - projectId : string
+    - credentials : array
+    --
+    + __construct()
+    + send(token, title, body, data) : bool
+    + sendMultiple(tokens, title, body, data) : void
+    - getAccessToken() : string|null
+    - fetchAccessToken() : string|null
+    - base64url(data) : string
+  }
+}
+
+' ─────────────────────────────────────────────────────────────
+' MIDDLEWARE
+' ─────────────────────────────────────────────────────────────
+package "App\\Http\\Middleware" {
+  class EnsureAdmin {
+    + handle(request, next) : Response
+  }
+  class Authenticate {
+    # redirectTo(request) : string|null
+  }
+}
+
+' ─────────────────────────────────────────────────────────────
+' NOTIFICATIONS
+' ─────────────────────────────────────────────────────────────
+package "App\\Notifications" {
+  class ResetPasswordNotification {
+    + toMail(notifiable) : MailMessage
+    # resetUrl(notifiable) : string
+  }
+}
+
+' ─────────────────────────────────────────────────────────────
+' INHERITANCE
+' ─────────────────────────────────────────────────────────────
+AuthController      --|> Controller
+AiController        --|> Controller
+JobController       --|> Controller
+AdminController     --|> Controller
+ComplaintController --|> Controller
+
+' ─────────────────────────────────────────────────────────────
+' CONTROLLER → SERVICE DEPENDENCIES
+' ─────────────────────────────────────────────────────────────
+AiController  ..> AiCareerService : uses (injected) >
+AiController  ..> FcmService      : uses >
+JobController ..> FcmService      : uses (shortlist\n& job notifications) >
+AdminController ..> FcmService    : uses (approve/reject\nnotifications) >
+
+' ─────────────────────────────────────────────────────────────
+' MIDDLEWARE GUARDS
+' ─────────────────────────────────────────────────────────────
+EnsureAdmin  ..> AdminController  : guards (admin routes) >
+Authenticate ..> AuthController   : guards (sanctum routes) >
+
+' ─────────────────────────────────────────────────────────────
+' MODELS REFERENCED (cross-reference to Part 1)
+' ─────────────────────────────────────────────────────────────
+note as ModelRef
+  <b>Models used (see Part 1 for full schema):</b>
+  AuthController    → User, JobSeeker, Company
+  AiController      → UserResume, UserRoadmap, UserQuiz
+  JobController     → Job, User, UserResume, Shortlist
+  AdminController   → User, Company, Job, Complaint,
+                       UserResume, UserRoadmap, UserQuiz
+  ComplaintController → Complaint
+end note
+
+' ─────────────────────────────────────────────────────────────
+' NOTES
+' ─────────────────────────────────────────────────────────────
+note bottom of AiCareerService
+  Calls Google Gemini API
+  (gemini-flash-latest) for:
+  gap analysis, roadmap generation,
+  quiz creation, ATS CV generation,
+  and candidate ranking.
+end note
+
+note bottom of FcmService
+  Firebase FCM v1 API with
+  JWT/OAuth2 auth for push
+  notifications. Triggered by:
+  shortlistCandidate(), approveCompany(),
+  rejectCompany(), confirmPayment(),
+  paymentSuccess().
+end note
+
+note right of AdminController
+  NEW: getUsers() → list all users
+  (job seekers & companies separately).
+  NEW: deleteUser() → hard delete user
+  + cascade (cannot delete admin).
+end note
+
+note right of JobController
+  NEW: getCandidateProfile(userId, job_id?)
+  NEW: getJobCandidates(jobId)
+  NEW: shortlistCandidate(userId, job_id?)
+  → saves to shortlists table
+  → sends real FCM notification
+  (NOT on page load — only on action)
+end note
+
+@enduml

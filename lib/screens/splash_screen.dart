@@ -1,5 +1,8 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
+
 import '../theme/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -35,7 +38,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     // ⏱ الانتقال بعد 3 ثواني للـ Login
     Timer(const Duration(seconds: 3), () {
-      Navigator.pushReplacementNamed(context, '/login');
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/login');
+      }
     });
   }
 
