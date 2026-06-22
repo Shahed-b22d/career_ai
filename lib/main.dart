@@ -1,8 +1,27 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'screens/splash_screen.dart';
+
+import 'screens/active_jobs_screen.dart';
+import 'screens/admin_dashboard_pro.dart';
+import 'screens/admin_login_screen.dart';
+import 'screens/ai_insights_screen.dart';
 import 'screens/auth_screen.dart';
+import 'screens/billing_screen.dart';
+import 'screens/candidate_profile_screen.dart';
+import 'screens/company_dashboard.dart';
+import 'screens/company_profile.dart';
+import 'screens/forgot_password_screen.dart';
+import 'screens/job_details_screen.dart';
+import 'screens/main_screen.dart';
+import 'screens/notifications_screen.dart';
+import 'screens/person_profile.dart';
+import 'screens/post_job_screen.dart';
 import 'screens/sign_up_screen.dart';
 import 'screens/splash_screen.dart';
+import 'screens/suggested_profiles_screen.dart';
+import 'screens/upload_cv_screen.dart';
+import 'screens/user_dashboard.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const MyApp());

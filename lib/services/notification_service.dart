@@ -137,7 +137,7 @@ class NotificationService {
 
       final url = Uri.parse('$_apiBase/api/auth/fcm-token');
 
-      final resp = await http.post(
+      await http.post(
         url,
         headers: {
           'Content-Type': 'application/json',
