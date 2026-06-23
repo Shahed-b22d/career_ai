@@ -237,7 +237,7 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
                 child: ClipOval(
                   child: avatarUrl != null
                       ? Image.network(
-                          "http://10.0.2.2:8000/storage/$avatarUrl",
+                          "http://127.0.0.1:8000/storage/$avatarUrl",
                           width: 40,
                           height: 40,
                           fit: BoxFit.cover,
