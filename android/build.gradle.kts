@@ -3,6 +3,15 @@ allprojects {
         google()
         mavenCentral()
     }
+
+    repositories.all {
+        if (this is MavenArtifactRepository) {
+            val originalUrl = url.toString()
+            if (originalUrl.contains("storage.googleapis.com")) {
+                url = uri(originalUrl.replace("storage.googleapis.com", "storage.flutter-io.cn"))
+            }
+        }
+    }
 }
 
 val newBuildDir: Directory =

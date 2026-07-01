@@ -13,7 +13,7 @@ class AiApiService {
   // 10.88.132.213 = Server IP (used by both emulator and physical device on same network)
 
   // ✅ الـ IP الحالي للسيرفر — يعمل على الموبايل الحقيقي والمحاكي على نفس الشبكة
-  static const String _host    = 'http://10.88.132.213:8000';
+  static const String _host    = 'http://192.168.1.107:8000';
 
   // (استخدم هذا السطر إذا كنت تستخدم الموبايل مع adb reverse)
   // static const String _host    = 'http://127.0.0.1:8000';
