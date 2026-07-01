@@ -8,14 +8,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'local_storage_service.dart';
 
 class AiApiService {
-  // 10.0.2.2 = localhost for Android Emulator
-  // 127.0.0.1 = localhost for Physical Device with `adb reverse`
-  
-  // (استخدم هذا السطر إذا كنت تستخدم الموبايل والوصلة)
-  static const String _host    = 'http://127.0.0.1:8000'; 
+  // 10.0.2.2      = localhost for Android Emulator
+  // 127.0.0.1     = localhost for Physical Device with `adb reverse`
+  // 10.88.132.213 = Server IP (used by both emulator and physical device on same network)
 
-  // (هذا السطر مخصص لشريكتك التي تستخدم المحاكي - يمكن تبديلهما عند الحاجة)
-  // static const String _host    = 'http://10.0.2.2:8000'; 
+  // ✅ الـ IP الحالي للسيرفر — يعمل على الموبايل الحقيقي والمحاكي على نفس الشبكة
+  static const String _host    = 'http://10.88.132.213:8000';
+
+  // (استخدم هذا السطر إذا كنت تستخدم الموبايل مع adb reverse)
+  // static const String _host    = 'http://127.0.0.1:8000';
+
+  // (هذا السطر مخصص للمحاكي فقط بدون شبكة خارجية)
+  // static const String _host    = 'http://10.0.2.2:8000';
 
   static const String baseUrl  = '$_host/api/ai';
   static const String authUrl  = '$_host/api/auth';
