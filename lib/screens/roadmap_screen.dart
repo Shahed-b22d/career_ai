@@ -21,6 +21,7 @@ class _RoadmapScreenState extends State<RoadmapScreen> {
   List<Map<String, dynamic>> roadmapSteps = [];
   bool isLoading = true;
   String fullRoadmapText = "";
+  String? _errorMessage; // null means no error
   
   int _loadingTextIndex = 0;
   final List<String> _loadingMessages = [
@@ -50,6 +51,11 @@ class _RoadmapScreenState extends State<RoadmapScreen> {
   }
 
   Future<void> _fetchRoadmap() async {
+    setState(() {
+      isLoading = true;
+      _errorMessage = null;
+    });
+
     try {
       Map<String, dynamic>? response;
       if (widget.missingSkills.isEmpty) {
@@ -76,9 +82,20 @@ class _RoadmapScreenState extends State<RoadmapScreen> {
             };
           }).toList();
         }
+
+        if (roadmapSteps.isEmpty) {
+          _errorMessage = "No roadmap steps were generated. Please try again.";
+        }
+      } else {
+        // response was null — server returned an error (e.g. 429 quota)
+        _errorMessage = "The AI service is currently busy.\nPlease wait a moment and tap \"Retry\".";
       }
     } catch (e) {
       debugPrint("Roadmap Fetch Error: $e");
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      _errorMessage = msg.isNotEmpty
+          ? msg
+          : "Something went wrong.\nPlease check your connection and try again.";
     }
 
     if (mounted) {
@@ -339,7 +356,9 @@ class _RoadmapScreenState extends State<RoadmapScreen> {
                 ],
               ),
             ) 
-          : Column(
+          : _errorMessage != null
+              ? _buildErrorView()
+              : Column(
         children: [
           // Progress Header
           Container(
@@ -622,6 +641,73 @@ class _RoadmapScreenState extends State<RoadmapScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildErrorView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.cloud_off_rounded,
+                size: 64,
+                color: Colors.orange.shade400,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              "Couldn't Load Roadmap",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimaryColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _errorMessage!,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+                height: 1.6,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _fetchRoadmap,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text("Retry"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Go Back"),
+            ),
+          ],
+        ),
       ),
     );
   }

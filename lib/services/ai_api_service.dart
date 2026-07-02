@@ -13,7 +13,7 @@ class AiApiService {
   // 10.88.132.213 = Server IP (used by both emulator and physical device on same network)
 
   // ✅ الـ IP الحالي للسيرفر — يعمل على الموبايل الحقيقي والمحاكي على نفس الشبكة
-  static const String _host    = 'http://192.168.1.107:8000';
+  static const String _host    = 'http://192.168.1.100:8000';
 
   // (استخدم هذا السطر إذا كنت تستخدم الموبايل مع adb reverse)
   // static const String _host    = 'http://127.0.0.1:8000';
@@ -24,9 +24,25 @@ class AiApiService {
   static const String baseUrl  = '$_host/api/ai';
   static const String authUrl  = '$_host/api/auth';
 
+  /// Extract a human-readable error from a failed API response body.
+  static String _extractErrorMessage(String body, {int? statusCode}) {
+    try {
+      final decoded = _cleanAndDecode(body);
+      if (decoded is Map) {
+        final msg = decoded['error'] ?? decoded['message'];
+        if (msg != null && msg.toString().isNotEmpty) {
+          return msg.toString();
+        }
+      }
+    } catch (_) {}
+    if (statusCode != null) {
+      return 'Server returned $statusCode';
+    }
+    return 'Request failed';
+  }
+
   /// دالة مساعدة لتنظيف الردود القادمة من السيرفر من أي تحذيرات (PHP Warnings)
   static dynamic _cleanAndDecode(String body) {
-
     body = body.trim();
     if (body.isEmpty) return {};
 
@@ -471,11 +487,12 @@ class AiApiService {
         return _cleanAndDecode(response.body);
       } else {
         print("DEBUG: Gap Analysis Error Body: ${response.body}");
-        return null;
+        throw Exception(_extractErrorMessage(response.body, statusCode: response.statusCode));
       }
     } catch (e) {
       print("DEBUG: Gap Analysis Exception: $e");
-      return null;
+      if (e is Exception) rethrow;
+      throw Exception(e.toString());
     }
   }
 
@@ -500,11 +517,12 @@ class AiApiService {
         return _cleanAndDecode(response.body);
       } else {
         print("Error in generateRoadmap: ${response.statusCode} - ${response.body}");
-        return null;
+        throw Exception(_extractErrorMessage(response.body, statusCode: response.statusCode));
       }
     } catch (e) {
       print("Exception in generateRoadmap: $e");
-      return null;
+      if (e is Exception) rethrow;
+      throw Exception(e.toString());
     }
   }
 
@@ -577,11 +595,12 @@ class AiApiService {
         return _cleanAndDecode(response.body);
       } else {
         print("Error in generateQuiz: ${response.statusCode} - ${response.body}");
-        return null;
+        throw Exception(_extractErrorMessage(response.body, statusCode: response.statusCode));
       }
     } catch (e) {
       print("Exception in generateQuiz: $e");
-      return null;
+      if (e is Exception) rethrow;
+      throw Exception(e.toString());
     }
   }
 
