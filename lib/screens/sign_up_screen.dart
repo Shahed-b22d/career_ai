@@ -87,8 +87,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       // تحقق من بيانات الشركة قبل البدء بجوجل
       if (selectedRole == "company") {
-        if (selectedBusinessType == null || (selectedBusinessType == "Other" && otherBusinessTypeController.text.isEmpty) || commercialRegisterFile == null) {
-          showError("Please complete company details (Business Type & File) before Google Sign-In");
+        if (selectedBusinessType == null ||
+            (selectedBusinessType == "Other" && otherBusinessTypeController.text.isEmpty) ||
+            commercialRegisterFile == null) {
+          showError(
+              "Please complete company details (Business Type & File) before Google Sign-In");
           return;
         }
       }
@@ -121,32 +124,41 @@ class _SignUpScreenState extends State<SignUpScreen> {
         idToken: googleAuth.idToken,
       );
 
-      final userCredential = await auth.signInWithCredential(credential);
+      // 1. تسجيل الدخول في Firebase
+      await auth.signInWithCredential(credential);
 
-      final user = userCredential.user;
-      if (user == null || user.email == null) {
-        throw Exception("Failed to retrieve user information from Google.");
+      // 2. الحصول على Firebase ID Token وإرساله للباك إند
+      final firebaseIdToken = await auth.currentUser?.getIdToken();
+      if (firebaseIdToken == null) {
+        throw Exception("Failed to get Firebase ID token.");
       }
 
-      // إصلاح: ربط حساب جوجل بقاعدة بيانات الباك إند
-      await AiApiService.register(
-        name: user.displayName ?? "Google User",
-        email: user.email!,
-        password: "social_login_password_placeholder", // كلمة مرور وهمية للباك إند
+      final finalBusinessType = selectedRole == 'company'
+          ? (selectedBusinessType == "Other"
+              ? otherBusinessTypeController.text.trim()
+              : selectedBusinessType)
+          : null;
+
+      final result = await AiApiService.googleLogin(
+        idToken: firebaseIdToken,
         role: selectedRole,
         governorate: selectedGovernorate!,
-        phone: userCredential.user?.phoneNumber ?? "0000000000",
-        businessType: selectedRole == 'company'
-            ? (selectedBusinessType == "Other"
-                ? otherBusinessTypeController.text.trim()
-                : selectedBusinessType)
+        phone: phoneController.text.trim().isNotEmpty
+            ? phoneController.text.trim()
             : null,
+        businessType: finalBusinessType,
         commercialRegisterFile: selectedRole == 'company' ? commercialRegisterFile : null,
       );
 
       if (mounted) {
         Navigator.pop(context);
-        if (selectedRole == 'company') {
+        // شركة جديدة عبر Google تحتاج موافقة الأدمن
+        if (result['requires_approval'] == true) {
+          _showApprovalDialog();
+          return;
+        }
+        final userRole = result['user']?['role'] ?? selectedRole;
+        if (userRole == 'company') {
           Navigator.pushReplacementNamed(context, '/companyDashboard');
         } else {
           Navigator.pushReplacementNamed(context, '/userDashboard');
@@ -154,7 +166,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       }
     } catch (e) {
       if (mounted) {
-        // تسجيل الخروج من Firebase إذا فشل التسجيل في الباك إند لضمان التناسق
+        // تسجيل الخروج من Firebase إذا فشل الربط بالباك إند
         await FirebaseAuth.instance.signOut();
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -283,6 +295,96 @@ class _SignUpScreenState extends State<SignUpScreen> {
         content: Text(msg),
         backgroundColor: Colors.redAccent,
         behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showApprovalDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.hourglass_top_rounded,
+                  color: Colors.orange.shade700, size: 28),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                "Account Under Review",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Divider(),
+            const SizedBox(height: 12),
+            const Text(
+              "Your company account has been created successfully! 🎉",
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline,
+                      color: Colors.orange.shade700, size: 20),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      "Your account is currently pending admin approval. "
+                      "You will receive an email once your account is approved and you can start using the platform.",
+                      style: TextStyle(fontSize: 13, height: 1.5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange.shade700,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.pushReplacementNamed(context, '/login');
+              },
+              child: const Text("Got it, Back to Login",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
       ),
     );
   }
@@ -533,7 +635,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     if (mounted) Navigator.pop(context);
 
                     if (mounted) {
-                      // register() throws on error, so if we reach here it succeeded
+                      // شركة جديدة تحتاج موافقة الأدمن — نعرض dialog توضيحي
+                      if (result['requires_approval'] == true) {
+                        _showApprovalDialog();
+                        return;
+                      }
+
+                      // باقي الأدوار (job seeker) تروح مباشرة للـ dashboard
                       final role = result['user']?['role'] ?? selectedRole;
                       Navigator.pushReplacementNamed(
                         context,

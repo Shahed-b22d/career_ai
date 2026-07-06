@@ -95,10 +95,7 @@ class _AuthAndRoleSelectionWidgetState
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        clientId: '642116540552-4f8v4824t9m73v3chfs2s17bed1nnf35.apps.googleusercontent.com',
-        serverClientId: '642116540552-4f8v4824t9m73v3chfs2s17bed1nnf35.apps.googleusercontent.com',
-      );
+      final GoogleSignIn googleSignIn = GoogleSignIn();
 
       GoogleSignInAccount? googleUser;
       try {
@@ -123,23 +120,44 @@ class _AuthAndRoleSelectionWidgetState
       }
 
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      // 1. تسجيل الدخول في Firebase
       final OAuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-
       await FirebaseAuth.instance.signInWithCredential(credential);
+
+      // 2. إرسال Firebase ID Token إلى الباك إند للحصول على Sanctum token
+      final firebaseIdToken = await FirebaseAuth.instance.currentUser?.getIdToken();
+      if (firebaseIdToken == null) {
+        throw Exception("Failed to get Firebase ID token.");
+      }
+
+      final result = await AiApiService.googleLogin(
+        idToken: firebaseIdToken,
+        role: selectedRole,
+      );
+
+      // 3. إرسال FCM token
+      final fcmToken = await NotificationService().getToken();
+      if (fcmToken != null) {
+        AiApiService.updateFcmToken(fcmToken);
+      }
 
       if (mounted) {
         Navigator.pop(context);
-        if (selectedRole == 'company') {
+        final userRole = result['user']?['role'] ?? selectedRole;
+        if (userRole == 'company') {
           Navigator.pushReplacementNamed(context, '/companyDashboard');
         } else {
-          Navigator.pushReplacementNamed(context, '/home');
+          Navigator.pushReplacementNamed(context, '/userDashboard');
         }
       }
     } catch (e) {
       if (mounted) {
+        // تسجيل الخروج من Firebase إذا فشل الربط بالباك إند
+        await FirebaseAuth.instance.signOut();
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -125,6 +125,12 @@ class AiApiService {
 
       if (response.statusCode == 201) {
         final data = _cleanAndDecode(response.body) as Map<String, dynamic>;
+
+        // شركات جديدة لا يرجع لها token — بتحتاج موافقة الأدمن أولاً
+        if (data['requires_approval'] == true) {
+          return data;
+        }
+
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('auth_token', data['token']);
 
@@ -138,6 +144,83 @@ class AiApiService {
             governorate:  data['user']['governorate']   ?? governorate,
             avatar:       data['user']['avatar_path'],
             description:  data['user']['company']?['description'],
+          );
+        }
+        return data;
+      } else {
+        String errorMsg = response.body;
+        try {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map && decoded.containsKey('message')) {
+            errorMsg = decoded['message'];
+          }
+        } catch (_) {}
+        throw Exception(errorMsg);
+      }
+    } catch (e) {
+      throw Exception(e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  // ─── 1.5. Auth: Google Login / Register ─────────────────────────────────────
+  /// يُرسل Firebase ID Token إلى الباك إند للتحقق منه وإرجاع Sanctum token.
+  /// يعمل لكل من تسجيل الدخول (مستخدم موجود) والتسجيل الأول (مستخدم جديد).
+  static Future<Map<String, dynamic>> googleLogin({
+    required String idToken,
+    required String role,
+    String? governorate,
+    String? phone,
+    String? businessType,
+    File? commercialRegisterFile,
+  }) async {
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$authUrl/google-login'),
+      );
+
+      request.headers['Accept'] = 'application/json';
+
+      request.fields['id_token'] = idToken;
+      request.fields['role'] = role;
+      if (governorate != null && governorate.isNotEmpty) {
+        request.fields['governorate'] = governorate;
+      }
+      if (phone != null && phone.isNotEmpty) {
+        request.fields['phone'] = phone;
+      }
+      if (businessType != null && businessType.isNotEmpty) {
+        request.fields['business_type'] = businessType;
+      }
+      if (commercialRegisterFile != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'commercial_register_file',
+            commercialRegisterFile.path,
+          ),
+        );
+      }
+
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+
+      if (response.statusCode == 200) {
+        final data = _cleanAndDecode(response.body) as Map<String, dynamic>;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', data['token']);
+
+        if (data['user'] != null) {
+          final user = data['user'];
+          await LocalStorageService.saveUserProfile(
+            name: user['name'] ?? '',
+            email: user['email'] ?? '',
+            role: user['role'] ?? role,
+            businessType:
+                user['business_type'] ?? user['company']?['business_type'] ?? businessType,
+            phone: user['phone'] ?? phone,
+            governorate: user['governorate'] ?? governorate,
+            avatar: user['avatar_path'],
+            description: user['company']?['description'],
           );
         }
         return data;

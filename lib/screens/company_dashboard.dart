@@ -119,7 +119,6 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
                                 jobId: job['id'] is int ? job['id'] : int.tryParse(job['id']?.toString() ?? ''),
                                 title: job['title'] ?? 'Job Posting',
                                 subtitle: dateStr,
-                                badge: job['matches_count']?.toString() ?? '0 Matches',
                                 isPaid: job['is_paid'] == true || job['is_paid'] == 1 || job['is_paid'] == "1",
                                 description: job['description'] ?? '',
                                 location: job['location'] ?? '',
@@ -497,7 +496,6 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
     required int? jobId,
     required String title,
     required String subtitle,
-    required String badge,
     required bool isPaid,
     String description = '',
     String location = '',
@@ -513,7 +511,6 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
             'job_id':     jobId,
             'title':      title,
             'subtitle':   subtitle,
-            'matches':    badge,
             'description': description,
             'location':   location,
             'salary':     salary,
@@ -585,21 +582,7 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                badge,
-                style: const TextStyle(
-                  color: Colors.orange,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            )
+            const Icon(Icons.chevron_right_rounded, color: Colors.black38, size: 20),
           ],
         ),
       ),
