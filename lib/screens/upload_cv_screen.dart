@@ -72,21 +72,21 @@ class _UploadScreenState extends State<UploadScreen> {
     showDialog(context: context, barrierDismissible: false,
         builder: (_) => const FancyLoader());
 
-    final manualText = _selectedMode == 1
-        ? "Summary: ${summary.text}\nSkills: ${skills.text}\n"
-          "Experience: ${experience.text}\nEducation: ${education.text}"
-        : "";
+    try {
+      final manualText = _selectedMode == 1
+          ? "Summary: ${summary.text}\nSkills: ${skills.text}\n"
+            "Experience: ${experience.text}\nEducation: ${education.text}"
+          : "";
 
-    final response = await AiApiService.analyzeGap(
-      targetJob.text,
-      manualText,
-      cvFile: _selectedMode == 0 ? pickedFile : null,
-    );
+      final response = await AiApiService.analyzeGap(
+        targetJob.text,
+        manualText,
+        cvFile: _selectedMode == 0 ? pickedFile : null,
+      );
 
-    if (!mounted) return;
-    Navigator.pop(context);
+      if (!mounted) return;
+      Navigator.pop(context);
 
-    if (response != null) {
       Navigator.push(context, MaterialPageRoute(
         builder: (_) => CvAnalysisScreen(
           analysisData: response,
@@ -94,8 +94,10 @@ class _UploadScreenState extends State<UploadScreen> {
           userDataText: manualText.isNotEmpty ? manualText : (response['cv_text'] ?? ""),
         ),
       ));
-    } else {
-      _snack('Failed to analyze CV');
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      _snack(e.toString().replaceFirst('Exception: ', ''));
     }
   }
 
