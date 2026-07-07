@@ -13,6 +13,7 @@ class _SuggestedProfilesScreenState extends State<SuggestedProfilesScreen> {
   List<dynamic> _allCandidates   = [];
   List<dynamic> _filtered        = [];
   bool _isLoading                = true;
+  bool _isRescoring              = false; // حالة الـ rescoring
   String _searchQuery            = '';
 
   @override
@@ -44,6 +45,37 @@ class _SuggestedProfilesScreenState extends State<SuggestedProfilesScreen> {
     });
   }
 
+  /// يطلب من الـ Backend إعادة حساب النسب ثم يحدث القائمة
+  Future<void> _rescoreAndReload() async {
+    setState(() => _isRescoring = true);
+
+    final result = await AiApiService.rescoreCandidates();
+
+    if (!mounted) return;
+
+    if (result['success'] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message'] ?? 'Scores recalculated ✅'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      // أعد تحميل القائمة بالنسب الجديدة
+      await _loadCandidates();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message'] ?? 'Rescoring failed'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+
+    if (mounted) setState(() => _isRescoring = false);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -57,9 +89,28 @@ class _SuggestedProfilesScreenState extends State<SuggestedProfilesScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black87),
         actions: [
+          // ── زر إعادة حساب النسب ──────────────────────────────────────
+          _isRescoring
+              ? const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                )
+              : IconButton(
+                  icon: const Icon(Icons.auto_awesome, color: AppTheme.primaryColor),
+                  tooltip: 'Recalculate AI Scores',
+                  onPressed: _rescoreAndReload,
+                ),
+          // ── زر Refresh عادي ──────────────────────────────────────────
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            onPressed: _loadCandidates,
+            onPressed: _isRescoring ? null : _loadCandidates,
             tooltip: 'Refresh',
           ),
         ],

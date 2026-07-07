@@ -876,6 +876,30 @@ class AiApiService {
     }
   }
 
+  /// Rescore all candidates for the company's active jobs
+  /// Called when company taps "Recalculate Scores"
+  static Future<Map<String, dynamic>> rescoreCandidates() async {
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('$_host/api/candidates/rescore'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+      if (response.statusCode == 200) {
+        return _cleanAndDecode(response.body) as Map<String, dynamic>;
+      } else {
+        final err = _cleanAndDecode(response.body);
+        return {'success': false, 'message': err['message'] ?? 'Rescoring failed'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
   /// Get ALL suggested candidates for the Suggested Profiles screen
   static Future<List<dynamic>?> getSuggestedCandidates() async {
     try {
