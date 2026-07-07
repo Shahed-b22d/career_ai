@@ -27,6 +27,9 @@ class _AdminDashboardProState extends State<AdminDashboardPro> {
   List<dynamic> _pendingPayments = [];
   List<dynamic> _talentActivity = [];
 
+  // badge count — loaded on init so the sidebar shows immediately
+  int _pendingCompaniesCount = 0;
+
   List<dynamic> _allComplaints = [];
   Map<String, dynamic> _complaintCounts = {};
   String _complaintFilter = 'all';
@@ -49,7 +52,19 @@ class _AdminDashboardProState extends State<AdminDashboardPro> {
       if (mounted) Navigator.pushReplacementNamed(context, '/adminLogin');
       return;
     }
-    await _loadDashboard();
+    // Load dashboard + pending count in parallel
+    await Future.wait([
+      _loadDashboard(),
+      _loadPendingCount(),
+    ]);
+  }
+
+  /// Quick fetch to count pending companies — used for the sidebar badge.
+  Future<void> _loadPendingCount() async {
+    final list = await AdminApiService.getPendingCompanies();
+    if (mounted) {
+      setState(() => _pendingCompaniesCount = list.length);
+    }
   }
 
   Future<void> _loadDashboard() async {
@@ -83,7 +98,10 @@ class _AdminDashboardProState extends State<AdminDashboardPro> {
     setState(() => _loading = true);
     _pendingCompanies = await AdminApiService.getPendingCompanies();
     _pendingPayments = await AdminApiService.getPendingPayments();
-    setState(() => _loading = false);
+    setState(() {
+      _loading = false;
+      _pendingCompaniesCount = _pendingCompanies.length;
+    });
   }
 
   Future<void> _loadTalents() async {
@@ -181,35 +199,87 @@ class _AdminDashboardProState extends State<AdminDashboardPro> {
             icon: Icon(_isDark ? Icons.light_mode : Icons.dark_mode, color: Colors.grey),
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.notifications_none, color: Colors.grey),
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(Icons.notifications_none, color: Colors.grey),
+                if (_pendingCompaniesCount > 0)
+                  Positioned(
+                    top: -4,
+                    right: -4,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                        color: Colors.redAccent,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                      child: Text(
+                        '$_pendingCompaniesCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             offset: const Offset(0, 50),
             color: kCard,
-            itemBuilder: (_) => _notifications.isEmpty
+            itemBuilder: (_) => _notifications.isEmpty && _pendingCompaniesCount == 0
                 ? <PopupMenuEntry<String>>[PopupMenuItem(enabled: false, child: Text('No notifications', style: TextStyle(color: kText)))]
-                : _notifications.map<PopupMenuEntry<String>>((n) {
-                    IconData icon = Icons.info;
-                    if (n['type'] == 'payment') icon = Icons.attach_money;
-                    if (n['type'] == 'complaint') icon = Icons.warning_amber;
-                    if (n['type'] == 'verification') icon = Icons.business;
-                    return PopupMenuItem<String>(
-                      value: n['title'],
-                      child: Row(
-                        children: [
-                          Icon(icon, size: 18, color: Colors.blueAccent),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(n['title'] ?? '', style: TextStyle(color: kText, fontSize: 13)),
-                                Text(n['time'] ?? '', style: const TextStyle(color: Colors.grey, fontSize: 11)),
-                              ],
+                : [
+                    if (_pendingCompaniesCount > 0)
+                      PopupMenuItem<String>(
+                        value: 'verification',
+                        onTap: () => _onNavTap(1),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.business_center_rounded, size: 18, color: Colors.orange),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '$_pendingCompaniesCount ${_pendingCompaniesCount == 1 ? 'company' : 'companies'} pending verification',
+                                    style: TextStyle(color: kText, fontSize: 13, fontWeight: FontWeight.bold),
+                                  ),
+                                  const Text('Tap to review CR documents', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    );
-                  }).toList(),
+                    ..._notifications.map<PopupMenuEntry<String>>((n) {
+                      IconData icon = Icons.info;
+                      if (n['type'] == 'payment') icon = Icons.attach_money;
+                      if (n['type'] == 'complaint') icon = Icons.warning_amber;
+                      if (n['type'] == 'verification') icon = Icons.business;
+                      return PopupMenuItem<String>(
+                        value: n['title'],
+                        child: Row(
+                          children: [
+                            Icon(icon, size: 18, color: Colors.blueAccent),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(n['title'] ?? '', style: TextStyle(color: kText, fontSize: 13)),
+                                  Text(n['time'] ?? '', style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
           ),
           const SizedBox(width: 15),
           CircleAvatar(radius: 15, backgroundColor: kPrimary, child: const Icon(Icons.person, size: 18, color: Colors.white)),
@@ -253,10 +323,40 @@ class _AdminDashboardProState extends State<AdminDashboardPro> {
 
   Widget _navItem(int index, String title, IconData icon, Color kPrimary, Color kText) {
     final isSelected = _selectedIndex == index;
+    // Show red badge on Verifications tab when there are pending companies
+    final showBadge = index == 1 && _pendingCompaniesCount > 0;
+
     return ListTile(
       selected: isSelected,
       selectedTileColor: kPrimary.withOpacity(0.1),
-      leading: Icon(icon, color: isSelected ? kPrimary : Colors.grey),
+      leading: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Icon(icon, color: isSelected ? kPrimary : Colors.grey),
+          if (showBadge)
+            Positioned(
+              top: -4,
+              right: -6,
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: const BoxDecoration(
+                  color: Colors.redAccent,
+                  shape: BoxShape.circle,
+                ),
+                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                child: Text(
+                  '$_pendingCompaniesCount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+        ],
+      ),
       title: Text(title, style: TextStyle(color: isSelected ? kText : Colors.grey)),
       onTap: () => _onNavTap(index),
     );

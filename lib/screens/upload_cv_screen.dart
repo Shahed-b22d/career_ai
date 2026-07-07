@@ -91,7 +91,7 @@ class _UploadScreenState extends State<UploadScreen> {
         builder: (_) => CvAnalysisScreen(
           analysisData: response,
           targetJob: targetJob.text,
-          userDataText: manualText.isNotEmpty ? manualText : (response['cv_text'] ?? ""),
+          userDataText: manualText.isNotEmpty ? manualText : (response?['cv_text'] ?? ""),
         ),
       ));
     } catch (e) {
